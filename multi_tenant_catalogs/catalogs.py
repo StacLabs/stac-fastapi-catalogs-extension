@@ -5,6 +5,8 @@ from typing import Type
 import attr
 from fastapi import APIRouter, FastAPI
 from fastapi.responses import JSONResponse
+from stac_fastapi.api.routes import create_async_endpoint
+from stac_fastapi.types.extension import ApiExtension
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -12,9 +14,6 @@ from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
 from starlette.responses import Response
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
-
-from stac_fastapi.api.routes import create_async_endpoint
-from stac_fastapi.types.extension import ApiExtension
 
 from .client import AsyncBaseCatalogsClient
 from .types import (
@@ -105,7 +104,9 @@ class CatalogsExtension(ApiExtension):
             name="Get All Catalogs",
             path="/catalogs",
             methods=["GET"],
-            endpoint=create_async_endpoint(self.client.get_catalogs, CatalogsGetRequest),
+            endpoint=create_async_endpoint(
+                self.client.get_catalogs, CatalogsGetRequest
+            ),
             response_model=Catalogs
             if self.settings.get("enable_response_models", True)
             else None,
@@ -264,7 +265,9 @@ class CatalogsExtension(ApiExtension):
                 "sub-catalog (Filter Extension)."
             ),
             tags=["Catalogs"],
-            responses={HTTP_200_OK: {"description": "Queryable fields for the catalog"}},
+            responses={
+                HTTP_200_OK: {"description": "Queryable fields for the catalog"}
+            },
         )
 
     def register_transaction_endpoints(self) -> None:

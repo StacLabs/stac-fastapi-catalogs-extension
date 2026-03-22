@@ -5,13 +5,12 @@ from typing import Literal
 import attr
 from fastapi import Body, Path, Query
 from pydantic import BaseModel
+from stac_fastapi.types.search import APIRequest, _bbox_converter
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
 from stac_pydantic.links import Links
 from stac_pydantic.shared import BBox, StacBaseModel
 from typing_extensions import Annotated
-
-from stac_fastapi.types.search import APIRequest, _bbox_converter
 
 
 class ObjectUri(BaseModel):
