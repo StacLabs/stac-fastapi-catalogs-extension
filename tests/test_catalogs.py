@@ -6,15 +6,6 @@ from datetime import datetime
 import pytest
 from fastapi import Request
 from stac_fastapi.api.app import StacApi
-from stac_fastapi.extensions.third_party import CatalogsExtension
-from stac_fastapi.extensions.third_party.multi_tenant_catalogs.client import (
-    AsyncBaseCatalogsClient,
-)
-from stac_fastapi.extensions.third_party.multi_tenant_catalogs.types import (
-    Catalogs,
-    Children,
-    ObjectUri,
-)
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
 from stac_pydantic.api.collections import Collections
@@ -24,6 +15,10 @@ from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
 from starlette.responses import Response
 from starlette.testclient import TestClient
+
+from multi_tenant_catalogs import CatalogsExtension
+from multi_tenant_catalogs.client import AsyncBaseCatalogsClient
+from multi_tenant_catalogs.types import Catalogs, Children, ObjectUri
 
 
 class DummyCoreClient(BaseCoreClient):

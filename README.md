@@ -27,8 +27,19 @@ It also supports contextual navigation for scoped routes, preserving UI
 breadcrumb behavior while still exposing alternative parents through related
 links.
 
+## Implementation status
+
+| Project | Status | Notes |
+| --- | --- | --- |
+| [stac-fastapi-elasticsearch-opensearch (SFEOS)](https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch) | Implemented | Active integration target for this extension |
+| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Not implemented yet | Planned |
+| [stac-fastapi-mongo](https://github.com/stac-utils/stac-fastapi-mongo) | Not implemented yet | Planned |
+
+_Last verified: 2026-03-22_
+
 ## Table of contents
 
+- [Implementation status](#implementation-status)
 - [Specification reference](#specification-reference)
 - [Conformance class guidance](#conformance-class-guidance)
 - [What this package provides](#what-this-package-provides)
@@ -79,8 +90,11 @@ This extension is designed for STAC FastAPI deployment applications and is
 currently supported in:
 
 - SFEOS: https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch
-- stac-fastapi-pgstac style deployments:
-	https://github.com/stac-utils/stac-fastapi-pgstac
+
+Planned (not yet implemented):
+
+- stac-fastapi-pgstac: https://github.com/stac-utils/stac-fastapi-pgstac
+- stac-fastapi-mongo: https://github.com/stac-utils/stac-fastapi-mongo
 
 It can also be integrated into custom STAC FastAPI deployments that implement
 the AsyncBaseCatalogsClient contract.
@@ -103,9 +117,9 @@ pip install stac-fastapi-catalogs-extension
 
 ## Integrate in a STAC FastAPI deployment
 
-In your deployment app.py (for example in stac-fastapi-elasticsearch-opensearch
-or stac-fastapi-pgstac style apps), instantiate StacApi with CatalogsExtension
-and pass an implementation of AsyncBaseCatalogsClient.
+In your deployment app.py (for example in
+stac-fastapi-elasticsearch-opensearch), instantiate StacApi with
+CatalogsExtension and pass an implementation of AsyncBaseCatalogsClient.
 
 ```python
 from stac_fastapi.api.app import StacApi
@@ -164,7 +178,7 @@ required async methods, including:
 - Reuse your existing core client for global /collections and /search routes.
 - Add CatalogsExtension to the extensions list in app.py as shown above.
 
-### stac-fastapi-pgstac style deployment
+### stac-fastapi-pgstac style deployment (planned)
 
 - Build a catalogs client that maps these methods to SQL functions or pgstac
   tables/views that represent catalog hierarchy and scoped membership.
