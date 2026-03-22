@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stac-fastapi-catalogs-extension"
+version = "0.1.0"
+description = "STAC FastAPI extension for multi-tenant catalogs"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Jonathan Healy" }]
+dependencies = [
+  "attrs>=23.1.0",
+  "fastapi>=0.100.0",
+  "pydantic>=1.10",
+  "starlette>=0.27.0",
+  "stac-fastapi.api",
+  "stac-fastapi.types",
+  "stac-pydantic",
+  "typing-extensions>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "black>=22.10.0",
+  "flake8>=6.0.0",
+  "isort>=5.12.0",
+  "mypy>=0.991",
+  "pre-commit>=3.0.0",
+  "pydocstyle>=6.1.1",
+  "pytest>=7.0.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["multi_tenant_catalogs*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
