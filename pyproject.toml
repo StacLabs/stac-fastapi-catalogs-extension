@@ -7,7 +7,7 @@ name = "stac-fastapi-catalogs-extension"
 version = "0.1.0"
 description = "STAC FastAPI extension for multi-tenant catalogs"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
 authors = [{ name = "Jonathan Healy" }]
 dependencies = [
