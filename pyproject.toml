@@ -7,7 +7,7 @@ name = "stac-fastapi-catalogs-extension"
 version = "0.1.0"
 description = "STAC FastAPI extension for multi-tenant catalogs"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
 authors = [{ name = "Jonathan Healy" }]
 dependencies = [
@@ -25,6 +25,7 @@ dependencies = [
 dev = [
   "black>=22.10.0",
   "flake8>=6.0.0",
+  "httpx>=0.24.0",
   "isort>=5.12.0",
   "mypy>=0.991",
   "pre-commit>=3.0.0",
@@ -42,3 +43,6 @@ target-version = ["py310"]
 [tool.isort]
 profile = "black"
 line_length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
