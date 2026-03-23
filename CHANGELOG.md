@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Updated
 
+- Added token, limit params to get_catalog_collections
+
 ### Changed
 
 ### Removed
