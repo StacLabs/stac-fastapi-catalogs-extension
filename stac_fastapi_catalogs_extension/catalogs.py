@@ -20,6 +20,7 @@ from .types import (
     CatalogChildrenRequest,
     CatalogCollectionItemsRequest,
     CatalogCollectionItemUri,
+    CatalogCollectionsRequest,
     CatalogCollectionUri,
     Catalogs,
     CatalogsGetRequest,
@@ -137,7 +138,7 @@ class CatalogsExtension(ApiExtension):
             path="/catalogs/{catalog_id}/collections",
             methods=["GET"],
             endpoint=create_async_endpoint(
-                self.client.get_catalog_collections, CatalogsUri
+                self.client.get_catalog_collections, CatalogCollectionsRequest
             ),
             response_model=Collections
             if self.settings.get("enable_response_models", True)

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Updated
 
+- Align catalog collections request handling with limit/token query parameters.
+
 ### Changed
 
 ### Removed
