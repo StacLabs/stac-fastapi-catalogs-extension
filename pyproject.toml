@@ -18,7 +18,7 @@ dependencies = [
   "stac-fastapi.api",
   "stac-fastapi.types",
   "stac-pydantic",
-  "httpx<=0.27.2",
+  "httpx",
   "typing-extensions>=4.0.0",
 ]
 
@@ -31,7 +31,7 @@ Issues = "https://github.com/StacLabs/stac-fastapi-catalogs-extension/issues"
 dev = [
   "black>=22.10.0",
   "flake8>=6.0.0",
-  "httpx<=0.27.2",
+  "httpx",
   "isort>=5.12.0",
   "mypy>=0.991",
   "pre-commit>=3.0.0",
