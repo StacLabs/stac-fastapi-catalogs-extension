@@ -1,10 +1,13 @@
 """Tests for the Catalogs extension."""
 
-from collections.abc import Iterator
 from datetime import datetime
 
+# from starlette.testclient import TestClient
+import httpx
 import pytest
+import pytest_asyncio
 from fastapi import Request
+from httpx import ASGITransport
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
@@ -14,7 +17,6 @@ from stac_pydantic.collection import Collection
 from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
 from starlette.responses import Response
-from starlette.testclient import TestClient
 
 from stac_fastapi_catalogs_extension import CatalogsExtension
 from stac_fastapi_catalogs_extension.client import AsyncBaseCatalogsClient
@@ -413,11 +415,11 @@ def catalogs_client() -> DummyCatalogsClient:
     return DummyCatalogsClient()
 
 
-@pytest.fixture
-def client(
+@pytest_asyncio.fixture
+async def client(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
-) -> Iterator[TestClient]:
-    """Fixture for test client with transactions enabled."""
+) -> httpx.AsyncClient:
+    """Fixture for async test client with transactions enabled."""
     settings = ApiSettings()
     api = StacApi(
         settings=settings,
@@ -430,15 +432,19 @@ def client(
             ),
         ],
     )
-    with TestClient(api.app) as test_client:
+    transport = ASGITransport(app=api.app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as test_client:
         yield test_client
 
 
-@pytest.fixture
-def client_readonly(
+@pytest_asyncio.fixture
+async def client_readonly(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
-) -> Iterator[TestClient]:
-    """Fixture for test client with transactions disabled (read-only)."""
+) -> httpx.AsyncClient:
+    """Fixture for async test client with transactions disabled (read-only)."""
     settings = ApiSettings()
     api = StacApi(
         settings=settings,
@@ -451,13 +457,18 @@ def client_readonly(
             ),
         ],
     )
-    with TestClient(api.app) as test_client:
+    transport = ASGITransport(app=api.app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as test_client:
         yield test_client
 
 
-def test_get_catalogs(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalogs(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs endpoint."""
-    response = client.get("/catalogs")
+    response = await client.get("/catalogs")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "catalogs" in data
@@ -467,7 +478,8 @@ def test_get_catalogs(client: TestClient) -> None:
     assert data["numberReturned"] == 2
 
 
-def test_create_catalog(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_create_catalog(client: httpx.AsyncClient) -> None:
     """Test POST /catalogs endpoint."""
     catalog_data = {
         "type": "Catalog",
@@ -476,23 +488,25 @@ def test_create_catalog(client: TestClient) -> None:
         "stac_version": "1.0.0",
         "links": [],
     }
-    response = client.post("/catalogs", json=catalog_data)
+    response = await client.post("/catalogs", json=catalog_data)
     assert response.status_code == 201, response.text
     data = response.json()
     assert data["id"] == "new-catalog"
     assert data["description"] == "A new test catalog"
 
 
-def test_get_catalog(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id} endpoint."""
-    response = client.get("/catalogs/test-catalog-1")
+    response = await client.get("/catalogs/test-catalog-1")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["id"] == "test-catalog-1"
     assert data["description"] == "Catalog test-catalog-1"
 
 
-def test_update_catalog(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_update_catalog(client: httpx.AsyncClient) -> None:
     """Test PUT /catalogs/{catalog_id} endpoint."""
     catalog_data = {
         "type": "Catalog",
@@ -501,21 +515,23 @@ def test_update_catalog(client: TestClient) -> None:
         "stac_version": "1.0.0",
         "links": [],
     }
-    response = client.put("/catalogs/test-catalog-1", json=catalog_data)
+    response = await client.put("/catalogs/test-catalog-1", json=catalog_data)
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["id"] == "test-catalog-1"
 
 
-def test_delete_catalog(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_delete_catalog(client: httpx.AsyncClient) -> None:
     """Test DELETE /catalogs/{catalog_id} endpoint."""
-    response = client.delete("/catalogs/test-catalog-1")
+    response = await client.delete("/catalogs/test-catalog-1")
     assert response.status_code == 204, response.text
 
 
-def test_get_catalog_collections(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_collections(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/collections endpoint."""
-    response = client.get("/catalogs/test-catalog-1/collections")
+    response = await client.get("/catalogs/test-catalog-1/collections")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "collections" in data
@@ -523,7 +539,8 @@ def test_get_catalog_collections(client: TestClient) -> None:
     assert data["collections"][0]["id"] == "test-collection"
 
 
-def test_create_catalog_collection(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_create_catalog_collection(client: httpx.AsyncClient) -> None:
     """Test POST /catalogs/{catalog_id}/collections endpoint."""
     collection_data = {
         "type": "Collection",
@@ -536,29 +553,38 @@ def test_create_catalog_collection(client: TestClient) -> None:
         "license": "proprietary",
         "links": [],
     }
-    response = client.post("/catalogs/test-catalog-1/collections", json=collection_data)
+    response = await client.post(
+        "/catalogs/test-catalog-1/collections", json=collection_data
+    )
     assert response.status_code == 201, response.text
     data = response.json()
     assert data["id"] == "new-collection"
 
 
-def test_get_catalog_collection(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_collection(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/collections/{collection_id} endpoint."""
-    response = client.get("/catalogs/test-catalog-1/collections/test-collection")
+    response = await client.get("/catalogs/test-catalog-1/collections/test-collection")
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["id"] == "test-collection"
 
 
-def test_unlink_catalog_collection(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_unlink_catalog_collection(client: httpx.AsyncClient) -> None:
     """Test DELETE /catalogs/{catalog_id}/collections/{collection_id} endpoint."""
-    response = client.delete("/catalogs/test-catalog-1/collections/test-collection")
+    response = await client.delete(
+        "/catalogs/test-catalog-1/collections/test-collection"
+    )
     assert response.status_code == 204, response.text
 
 
-def test_get_catalog_collection_items(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_collection_items(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/collections/{collection_id}/items endpoint."""
-    response = client.get("/catalogs/test-catalog-1/collections/test-collection/items")
+    response = await client.get(
+        "/catalogs/test-catalog-1/collections/test-collection/items"
+    )
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["type"] == "FeatureCollection"
@@ -566,10 +592,13 @@ def test_get_catalog_collection_items(client: TestClient) -> None:
     assert data["features"][0]["id"] == "test-item"
 
 
-def test_get_catalog_collection_items_with_bbox(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_collection_items_with_bbox(
+    client: httpx.AsyncClient,
+) -> None:
     """Test GET .../items with bbox filter."""
     params = {"bbox": "-1,-1,1,1"}
-    response = client.get(
+    response = await client.get(
         "/catalogs/test-catalog-1/collections/test-collection/items", params=params
     )
     assert response.status_code == 200, response.text
@@ -578,17 +607,20 @@ def test_get_catalog_collection_items_with_bbox(client: TestClient) -> None:
     assert data["features"][0]["id"] == "test-item"
 
     params_out = {"bbox": "10,10,20,20"}
-    response_out = client.get(
+    response_out = await client.get(
         "/catalogs/test-catalog-1/collections/test-collection/items", params=params_out
     )
     assert response_out.status_code == 200, response_out.text
     assert len(response_out.json()["features"]) == 0
 
 
-def test_get_catalog_collection_items_with_datetime(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_collection_items_with_datetime(
+    client: httpx.AsyncClient,
+) -> None:
     """Test GET .../items with datetime filter."""
     params = {"datetime": "2024-01-01T00:00:00Z"}
-    response = client.get(
+    response = await client.get(
         "/catalogs/test-catalog-1/collections/test-collection/items", params=params
     )
     assert response.status_code == 200, response.text
@@ -596,16 +628,17 @@ def test_get_catalog_collection_items_with_datetime(client: TestClient) -> None:
     assert len(data["features"]) == 1
 
     params_out = {"datetime": "2023-01-01T00:00:00Z"}
-    response_out = client.get(
+    response_out = await client.get(
         "/catalogs/test-catalog-1/collections/test-collection/items", params=params_out
     )
     assert response_out.status_code == 200, response_out.text
     assert len(response_out.json()["features"]) == 0
 
 
-def test_get_catalog_collection_item(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_collection_item(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/collections/{collection_id}/items/{item_id}."""
-    response = client.get(
+    response = await client.get(
         "/catalogs/test-catalog-1/collections/test-collection/items/test-item"
     )
     assert response.status_code == 200, response.text
@@ -613,9 +646,10 @@ def test_get_catalog_collection_item(client: TestClient) -> None:
     assert data["id"] == "test-item"
 
 
-def test_get_sub_catalogs(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_sub_catalogs(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/catalogs endpoint."""
-    response = client.get("/catalogs/test-catalog-1/catalogs")
+    response = await client.get("/catalogs/test-catalog-1/catalogs")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "catalogs" in data
@@ -623,7 +657,8 @@ def test_get_sub_catalogs(client: TestClient) -> None:
     assert data["catalogs"][0]["id"] == "test-catalog-1-sub-1"
 
 
-def test_create_sub_catalog(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_create_sub_catalog(client: httpx.AsyncClient) -> None:
     """Test POST /catalogs/{catalog_id}/catalogs endpoint."""
     catalog_data = {
         "type": "Catalog",
@@ -632,35 +667,44 @@ def test_create_sub_catalog(client: TestClient) -> None:
         "stac_version": "1.0.0",
         "links": [],
     }
-    response = client.post("/catalogs/test-catalog-1/catalogs", json=catalog_data)
+    response = await client.post("/catalogs/test-catalog-1/catalogs", json=catalog_data)
     assert response.status_code == 201, response.text
     data = response.json()
     assert data["id"] == "new-sub-catalog"
 
 
-def test_create_sub_catalog_with_object_uri(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_create_sub_catalog_with_object_uri(client: httpx.AsyncClient) -> None:
     """Test POST /catalogs/{catalog_id}/catalogs with ObjectUri (Mode B - linking)."""
     object_uri_data = {"id": "existing-catalog"}
-    response = client.post("/catalogs/test-catalog-1/catalogs", json=object_uri_data)
+    response = await client.post(
+        "/catalogs/test-catalog-1/catalogs", json=object_uri_data
+    )
     assert response.status_code == 201, response.text
     data = response.json()
     assert data["id"] == "existing-catalog"
     assert data["type"] == "Catalog"
 
 
-def test_create_catalog_collection_with_object_uri(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_create_catalog_collection_with_object_uri(
+    client: httpx.AsyncClient,
+) -> None:
     """Test POST /catalogs/{catalog_id}/collections with ObjectUri (Mode B - linking)."""
     object_uri_data = {"id": "existing-collection"}
-    response = client.post("/catalogs/test-catalog-1/collections", json=object_uri_data)
+    response = await client.post(
+        "/catalogs/test-catalog-1/collections", json=object_uri_data
+    )
     assert response.status_code == 201, response.text
     data = response.json()
     assert data["id"] == "existing-collection"
     assert data["type"] == "Collection"
 
 
-def test_get_catalog_children(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_children(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/children endpoint."""
-    response = client.get("/catalogs/test-catalog-1/children")
+    response = await client.get("/catalogs/test-catalog-1/children")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "children" in data
@@ -668,9 +712,10 @@ def test_get_catalog_children(client: TestClient) -> None:
     assert data["numberMatched"] == 2
 
 
-def test_get_catalog_children_with_type_filter(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_children_with_type_filter(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/children with type filter."""
-    response = client.get("/catalogs/test-catalog-1/children?type=Catalog")
+    response = await client.get("/catalogs/test-catalog-1/children?type=Catalog")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "children" in data
@@ -680,34 +725,42 @@ def test_get_catalog_children_with_type_filter(client: TestClient) -> None:
     assert data["numberReturned"] == 1
 
 
-def test_get_catalog_conformance(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_conformance(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/conformance endpoint."""
-    response = client.get("/catalogs/test-catalog-1/conformance")
+    response = await client.get("/catalogs/test-catalog-1/conformance")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "conformsTo" in data
     assert len(data["conformsTo"]) > 0
 
 
-def test_get_catalog_queryables(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_queryables(client: httpx.AsyncClient) -> None:
     """Test GET /catalogs/{catalog_id}/queryables endpoint."""
-    response = client.get("/catalogs/test-catalog-1/queryables")
+    response = await client.get("/catalogs/test-catalog-1/queryables")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "queryables" in data
     assert len(data["queryables"]) > 0
 
 
-def test_unlink_sub_catalog(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_unlink_sub_catalog(client: httpx.AsyncClient) -> None:
     """Test DELETE /catalogs/{catalog_id}/catalogs/{sub_catalog_id} endpoint."""
-    response = client.delete("/catalogs/test-catalog-1/catalogs/test-catalog-1-sub-1")
+    response = await client.delete(
+        "/catalogs/test-catalog-1/catalogs/test-catalog-1-sub-1"
+    )
     assert response.status_code == 204, response.text
 
 
-def test_get_catalog_collection_items_invalid_bbox_string(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_get_catalog_collection_items_invalid_bbox_string(
+    client: httpx.AsyncClient,
+) -> None:
     """Test that a garbage bbox string returns 400 Bad Request."""
     params = {"bbox": "not,a,bounding,box"}
-    response = client.get(
+    response = await client.get(
         "/catalogs/test-catalog-1/collections/test-collection/items", params=params
     )
     # The _bbox_converter in CatalogCollectionItemsRequest triggers a 400 error
@@ -716,9 +769,10 @@ def test_get_catalog_collection_items_invalid_bbox_string(client: TestClient) ->
     assert "invalid bbox" in response.json()["detail"]
 
 
-def test_landing_page_includes_catalogs_links(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_landing_page_includes_catalogs_links(client: httpx.AsyncClient) -> None:
     """Test that landing page includes catalogs links."""
-    response = client.get("/")
+    response = await client.get("/")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "links" in data
@@ -730,15 +784,19 @@ def test_landing_page_includes_catalogs_links(client: TestClient) -> None:
 # --- READ-ONLY MODE TESTS (enable_transactions=False) ---
 
 
-def test_readonly_get_catalogs(client_readonly: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_readonly_get_catalogs(client_readonly: httpx.AsyncClient) -> None:
     """Test GET /catalogs works in read-only mode."""
-    response = client_readonly.get("/catalogs")
+    response = await client_readonly.get("/catalogs")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "catalogs" in data
 
 
-def test_readonly_create_catalog_disabled(client_readonly: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_readonly_create_catalog_disabled(
+    client_readonly: httpx.AsyncClient,
+) -> None:
     """Test POST /catalogs returns 405 in read-only mode."""
     catalog_data = {
         "type": "Catalog",
@@ -747,11 +805,14 @@ def test_readonly_create_catalog_disabled(client_readonly: TestClient) -> None:
         "stac_version": "1.0.0",
         "links": [],
     }
-    response = client_readonly.post("/catalogs", json=catalog_data)
+    response = await client_readonly.post("/catalogs", json=catalog_data)
     assert response.status_code == 405
 
 
-def test_readonly_update_catalog_disabled(client_readonly: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_readonly_update_catalog_disabled(
+    client_readonly: httpx.AsyncClient,
+) -> None:
     """Test PUT /catalogs/{catalog_id} returns 405 in read-only mode."""
     catalog_data = {
         "type": "Catalog",
@@ -760,17 +821,23 @@ def test_readonly_update_catalog_disabled(client_readonly: TestClient) -> None:
         "stac_version": "1.0.0",
         "links": [],
     }
-    response = client_readonly.put("/catalogs/test-catalog-1", json=catalog_data)
+    response = await client_readonly.put("/catalogs/test-catalog-1", json=catalog_data)
     assert response.status_code == 405
 
 
-def test_readonly_delete_catalog_disabled(client_readonly: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_readonly_delete_catalog_disabled(
+    client_readonly: httpx.AsyncClient,
+) -> None:
     """Test DELETE /catalogs/{catalog_id} returns 405 in read-only mode."""
-    response = client_readonly.delete("/catalogs/test-catalog-1")
+    response = await client_readonly.delete("/catalogs/test-catalog-1")
     assert response.status_code == 405
 
 
-def test_readonly_create_collection_disabled(client_readonly: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_readonly_create_collection_disabled(
+    client_readonly: httpx.AsyncClient,
+) -> None:
     """Test POST /catalogs/{catalog_id}/collections returns 405 in read-only mode."""
     collection_data = {
         "type": "Collection",
@@ -783,21 +850,27 @@ def test_readonly_create_collection_disabled(client_readonly: TestClient) -> Non
         "license": "proprietary",
         "links": [],
     }
-    response = client_readonly.post(
+    response = await client_readonly.post(
         "/catalogs/test-catalog-1/collections", json=collection_data
     )
     assert response.status_code == 405
 
 
-def test_readonly_unlink_collection_disabled(client_readonly: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_readonly_unlink_collection_disabled(
+    client_readonly: httpx.AsyncClient,
+) -> None:
     """Test DELETE /catalogs/{catalog_id}/collections/{collection_id} returns 405."""
-    response = client_readonly.delete(
+    response = await client_readonly.delete(
         "/catalogs/test-catalog-1/collections/test-collection"
     )
     assert response.status_code == 405
 
 
-def test_readonly_create_subcatalog_disabled(client_readonly: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_readonly_create_subcatalog_disabled(
+    client_readonly: httpx.AsyncClient,
+) -> None:
     """Test POST /catalogs/{catalog_id}/catalogs returns 405 in read-only mode."""
     catalog_data = {
         "type": "Catalog",
@@ -806,26 +879,30 @@ def test_readonly_create_subcatalog_disabled(client_readonly: TestClient) -> Non
         "stac_version": "1.0.0",
         "links": [],
     }
-    response = client_readonly.post(
+    response = await client_readonly.post(
         "/catalogs/test-catalog-1/catalogs", json=catalog_data
     )
     assert response.status_code == 405
 
 
-def test_readonly_unlink_subcatalog_disabled(client_readonly: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_readonly_unlink_subcatalog_disabled(
+    client_readonly: httpx.AsyncClient,
+) -> None:
     """Test DELETE /catalogs/{catalog_id}/catalogs/{sub_catalog_id} is disabled."""
-    response = client_readonly.delete(
+    response = await client_readonly.delete(
         "/catalogs/test-catalog-1/catalogs/test-catalog-1-sub-1"
     )
     # Route is not registered, so we get 404 (Not Found)
     assert response.status_code == 404
 
 
-def test_readonly_conformance_excludes_transaction_class(
-    client_readonly: TestClient,
+@pytest.mark.asyncio
+async def test_readonly_conformance_excludes_transaction_class(
+    client_readonly: httpx.AsyncClient,
 ) -> None:
     """Test that transaction conformance class is not present in read-only mode."""
-    response = client_readonly.get("/catalogs/test-catalog-1/conformance")
+    response = await client_readonly.get("/catalogs/test-catalog-1/conformance")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "conformsTo" in data
@@ -835,9 +912,12 @@ def test_readonly_conformance_excludes_transaction_class(
     assert transaction_class not in data["conformsTo"]
 
 
-def test_enabled_conformance_includes_transaction_class(client: TestClient) -> None:
+@pytest.mark.asyncio
+async def test_enabled_conformance_includes_transaction_class(
+    client: httpx.AsyncClient,
+) -> None:
     """Test that transaction conformance class is present when enabled."""
-    response = client.get("/catalogs/test-catalog-1/conformance")
+    response = await client.get("/catalogs/test-catalog-1/conformance")
     assert response.status_code == 200, response.text
     data = response.json()
     assert "conformsTo" in data
