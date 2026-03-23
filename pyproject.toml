@@ -18,14 +18,20 @@ dependencies = [
   "stac-fastapi.api",
   "stac-fastapi.types",
   "stac-pydantic",
+  "httpx",
   "typing-extensions>=4.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/StacLabs/stac-fastapi-catalogs-extension"
+Repository = "https://github.com/StacLabs/stac-fastapi-catalogs-extension"
+Issues = "https://github.com/StacLabs/stac-fastapi-catalogs-extension/issues"
 
 [project.optional-dependencies]
 dev = [
   "black>=22.10.0",
   "flake8>=6.0.0",
-  "httpx>=0.24.0",
+  "httpx",
   "isort>=5.12.0",
   "mypy>=0.991",
   "pre-commit>=3.0.0",
@@ -34,7 +40,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["multi_tenant_catalogs*"]
+include = ["stac_fastapi_catalogs_extension*"]
 
 [tool.black]
 line-length = 88

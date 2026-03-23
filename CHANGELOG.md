@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+## [v0.1.1] - 2026-03-23
+
+### Fixed
+
+- Fixed project name
+
 ## [v0.1.0] - 2026-03-22
 
 ### Added
@@ -43,5 +49,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 	with the Black profile.
 
 
-[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.0...main
+[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.1...main
+[v0.1.1]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/releases/tag/v0.1.0
