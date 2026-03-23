@@ -11,13 +11,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Updated
 
-- Added token, limit params to get_catalog_collections
-
 ### Changed
 
 ### Removed
 
 ### Fixed
+
+## [v0.1.2] - 2026-03-23
+
+### Updated
+
+- Added token, limit params to get_catalog_collections
 
 ## [v0.1.1] - 2026-03-23
 
@@ -51,6 +55,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 	with the Black profile.
 
 
-[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.1...main
+[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.2...main
+[v0.1.2]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/releases/tag/v0.1.0
