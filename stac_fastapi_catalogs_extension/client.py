@@ -163,6 +163,8 @@ class AsyncBaseCatalogsClient(abc.ABC):
     async def get_catalog_collections(
         self,
         catalog_id: str,
+        limit: int | None = None,
+        token: str | None = None,
         request: Request | None = None,
         **kwargs,
     ) -> Collections | Response:
@@ -177,6 +179,8 @@ class AsyncBaseCatalogsClient(abc.ABC):
 
         Args:
             catalog_id: The ID of the catalog.
+            limit: Maximum number of results to return.
+            token: Pagination token for cursor-based pagination.
             request: Optional FastAPI request object.
 
         Returns:
