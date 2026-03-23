@@ -16,9 +16,9 @@ from stac_pydantic.item_collection import ItemCollection
 from starlette.responses import Response
 from starlette.testclient import TestClient
 
-from multi_tenant_catalogs import CatalogsExtension
-from multi_tenant_catalogs.client import AsyncBaseCatalogsClient
-from multi_tenant_catalogs.types import Catalogs, Children, ObjectUri
+from stac_fastapi_catalogs_extension import CatalogsExtension
+from stac_fastapi_catalogs_extension.client import AsyncBaseCatalogsClient
+from stac_fastapi_catalogs_extension.types import Catalogs, Children, ObjectUri
 
 
 class DummyCoreClient(BaseCoreClient):
