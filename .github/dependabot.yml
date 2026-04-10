@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Check GitHub Actions for updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github_actions"
+    groups:
+      github-actions-updates:
+        patterns:
+          - "*"
+
+  # Check Python dependencies in workflows
+  - package-ecosystem: "pip"
+    directory: "/.github/workflows"
+    schedule:
+      interval: "weekly"
+
+  # Check Python dependencies
+  - package-ecosystem: "pip"
+    directory: "."
+    schedule:
+      interval: "weekly"

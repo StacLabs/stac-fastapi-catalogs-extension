@@ -32,7 +32,7 @@ links.
 | Project | Status | Notes |
 | --- | --- | --- |
 | [stac-fastapi-elasticsearch-opensearch (SFEOS)](https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch) | Implemented | Active integration target for this extension |
-| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Not implemented yet | Planned |
+| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Not implemented yet | In Progress |
 | [stac-fastapi-mongo](https://github.com/stac-utils/stac-fastapi-mongo) | Not implemented yet | Planned |
 
 _Last verified: 2026-03-22_

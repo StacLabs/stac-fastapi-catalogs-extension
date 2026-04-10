@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+## [v0.1.3] - 2026-04-10
+
+### Updated
+
+- Added dependabot configuration
+
+### Fixed
+
+- Fixed router prefix issue
+
 ## [v0.1.2] - 2026-03-23
 
 ### Updated
