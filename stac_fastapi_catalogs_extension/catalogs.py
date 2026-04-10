@@ -91,7 +91,7 @@ class CatalogsExtension(ApiExtension):
         Args:
             app: target FastAPI application.
         """
-        self.router = APIRouter()
+        self.router.prefix = app.state.router_prefix
         self.register_read_endpoints()
         if self.enable_transactions:
             self.register_transaction_endpoints()
