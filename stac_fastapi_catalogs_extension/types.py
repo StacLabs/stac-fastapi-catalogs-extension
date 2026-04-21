@@ -113,6 +113,19 @@ class CatalogChildrenRequest(CatalogsUri):
     ] = attr.ib(default=None)
 
 
+@attr.s
+class CatalogCollectionsRequest(CatalogsUri):
+    """Parameters for /catalogs/{catalog_id}/collections."""
+
+    limit: Annotated[
+        int | None,
+        Query(ge=1, le=1000, description="Maximum number of collections to return"),
+    ] = attr.ib(default=10)
+    token: Annotated[str | None, Query(description="Pagination token")] = attr.ib(
+        default=None
+    )
+
+
 # --- Request Models with Body for Transaction Endpoints ---
 
 
