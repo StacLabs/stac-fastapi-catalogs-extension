@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stac-fastapi-catalogs-extension"
-version = "0.1.3"
+version = "0.2.0"
 description = "STAC FastAPI extension for multi-tenant catalogs"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,7 +18,7 @@ dependencies = [
   "stac-fastapi.api",
   "stac-fastapi.types",
   "stac-pydantic",
-  "httpx",
+  "httpx<0.28",
   "typing-extensions>=4.0.0",
 ]
 
@@ -31,7 +31,7 @@ Issues = "https://github.com/StacLabs/stac-fastapi-catalogs-extension/issues"
 dev = [
   "black>=22.10.0",
   "flake8>=6.0.0",
-  "httpx",
+  "httpx<0.28",
   "isort>=5.12.0",
   "mypy>=0.991",
   "pre-commit>=3.0.0",

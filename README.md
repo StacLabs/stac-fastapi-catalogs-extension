@@ -101,7 +101,9 @@ the AsyncBaseCatalogsClient contract.
 
 ## What this package provides
 
-- A STAC FastAPI extension class: CatalogsExtension
+- Two STAC FastAPI extension classes:
+  - `CatalogsExtension`: Read-only discovery endpoints for catalogs
+  - `CatalogsTransactionExtension`: Write operations (POST, PUT, DELETE) for catalog management
 - Request/response models for catalogs and children APIs
 - An abstract client contract: AsyncBaseCatalogsClient
 
@@ -119,13 +121,19 @@ pip install stac-fastapi-catalogs-extension
 
 In your deployment app.py (for example in
 stac-fastapi-elasticsearch-opensearch), instantiate StacApi with
-CatalogsExtension and pass an implementation of AsyncBaseCatalogsClient.
+CatalogsExtension and optionally CatalogsTransactionExtension, passing an
+implementation of AsyncBaseCatalogsClient.
+
+### Read-only deployment (discovery only)
 
 ```python
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.types.config import ApiSettings
 
-from multi_tenant_catalogs import CatalogsExtension
+from stac_fastapi_catalogs_extension import (
+    CatalogsExtension,
+    CATALOGS_CORE_CONFORMANCE,
+)
 from my_project.catalogs_client import CatalogsClient
 from my_project.core_client import CoreClient
 
@@ -141,9 +149,50 @@ api = StacApi(
     extensions=[
         CatalogsExtension(
             client=catalogs_client,
-            enable_transactions=True,
+            conformance_classes=list(CATALOGS_CORE_CONFORMANCE),
             settings=settings.model_dump(),
         )
+    ],
+)
+
+app = api.app
+```
+
+### With transaction support (read and write)
+
+```python
+from stac_fastapi.api.app import StacApi
+from stac_fastapi.types.config import ApiSettings
+
+from stac_fastapi_catalogs_extension import (
+    CatalogsExtension,
+    CatalogsTransactionExtension,
+    CATALOGS_CORE_CONFORMANCE,
+    CATALOGS_TRANSACTION_CONFORMANCE,
+)
+from my_project.catalogs_client import CatalogsClient
+from my_project.core_client import CoreClient
+
+
+settings = ApiSettings()
+
+core_client = CoreClient(...)
+catalogs_client = CatalogsClient(...)
+
+api = StacApi(
+    settings=settings,
+    client=core_client,
+    extensions=[
+        CatalogsExtension(
+            client=catalogs_client,
+            conformance_classes=list(CATALOGS_CORE_CONFORMANCE)
+            + list(CATALOGS_TRANSACTION_CONFORMANCE),
+            settings=settings.model_dump(),
+        ),
+        CatalogsTransactionExtension(
+            client=catalogs_client,
+            settings=settings.model_dump(),
+        ),
     ],
 )
 
@@ -162,6 +211,10 @@ required async methods, including:
 - delete_catalog
 - get_catalog_collections
 - create_catalog_collection
+- get_catalog_collection
+- unlink_catalog_collection
+- get_catalog_collection_items
+- get_catalog_collection_item
 - get_sub_catalogs
 - create_sub_catalog
 - unlink_sub_catalog
@@ -189,6 +242,8 @@ required async methods, including:
 
 ## Endpoints added by this extension
 
+### CatalogsExtension (read-only discovery)
+
 - GET /catalogs
 - GET /catalogs/{catalog_id}
 - GET /catalogs/{catalog_id}/collections
@@ -200,7 +255,10 @@ required async methods, including:
 - GET /catalogs/{catalog_id}/conformance
 - GET /catalogs/{catalog_id}/queryables
 
-When enable_transactions=True:
+### CatalogsTransactionExtension (write operations)
+
+When CatalogsTransactionExtension is enabled, the following additional endpoints
+are available for catalog and collection management:
 
 - POST /catalogs
 - PUT /catalogs/{catalog_id}
