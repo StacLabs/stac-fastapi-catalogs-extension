@@ -420,11 +420,6 @@ def client(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
 ) -> TestClient:
     """Fixture for test client with transactions enabled."""
-    from stac_fastapi_catalogs_extension import (
-        CATALOGS_CORE_CONFORMANCE,
-        CATALOGS_TRANSACTION_CONFORMANCE,
-    )
-
     settings = ApiSettings()
     api = StacApi(
         settings=settings,
@@ -433,8 +428,6 @@ def client(
             CatalogsExtension(
                 client=catalogs_client,
                 settings=settings.model_dump(),
-                conformance_classes=list(CATALOGS_CORE_CONFORMANCE)
-                + list(CATALOGS_TRANSACTION_CONFORMANCE),
             ),
             CatalogsTransactionExtension(
                 client=catalogs_client,
@@ -442,7 +435,8 @@ def client(
             ),
         ],
     )
-    return TestClient(api.app)
+    with TestClient(api.app) as test_client:
+        yield test_client
 
 
 @pytest.fixture
@@ -450,11 +444,6 @@ def client_with_transactions(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
 ) -> TestClient:
     """Fixture for test client with transactions enabled."""
-    from stac_fastapi_catalogs_extension import (
-        CATALOGS_CORE_CONFORMANCE,
-        CATALOGS_TRANSACTION_CONFORMANCE,
-    )
-
     settings = ApiSettings()
     api = StacApi(
         settings=settings,
@@ -463,8 +452,6 @@ def client_with_transactions(
             CatalogsExtension(
                 client=catalogs_client,
                 settings=settings.model_dump(),
-                conformance_classes=list(CATALOGS_CORE_CONFORMANCE)
-                + list(CATALOGS_TRANSACTION_CONFORMANCE),
             ),
             CatalogsTransactionExtension(
                 client=catalogs_client,
@@ -472,7 +459,8 @@ def client_with_transactions(
             ),
         ],
     )
-    return TestClient(api.app)
+    with TestClient(api.app) as test_client:
+        yield test_client
 
 
 @pytest.fixture
@@ -491,7 +479,8 @@ def client_readonly(
             ),
         ],
     )
-    return TestClient(api.app)
+    with TestClient(api.app) as test_client:
+        yield test_client
 
 
 def test_get_catalogs(client: TestClient) -> None:

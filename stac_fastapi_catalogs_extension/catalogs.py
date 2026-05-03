@@ -87,6 +87,11 @@ class CatalogsExtension(ApiExtension):
         """
         self.router.prefix = app.state.router_prefix
 
+        # Share conformance classes via app.state registry
+        if not hasattr(app.state, "catalogs_conformance_classes"):
+            app.state.catalogs_conformance_classes = set()
+        app.state.catalogs_conformance_classes.update(self.conformance_classes)
+
         # GET /catalogs
         self.router.add_api_route(
             name="Get All Catalogs",
@@ -277,7 +282,11 @@ class CatalogsExtension(ApiExtension):
         )
         if isinstance(result, dict):
             conforms = result.get("conformsTo", [])
-            conforms.extend(self.conformance_classes)
+            # Dynamically fetch ALL catalog conformance classes from app.state
+            if request and hasattr(request.app.state, "catalogs_conformance_classes"):
+                conforms.extend(request.app.state.catalogs_conformance_classes)
+            else:
+                conforms.extend(self.conformance_classes)
             result["conformsTo"] = list(set(conforms))
         return result
 
@@ -307,7 +316,10 @@ class CatalogsTransactionExtension(ApiExtension):
 
     client: AsyncBaseCatalogsClient = attr.ib(kw_only=True)
     settings: dict = attr.ib(default=attr.Factory(dict), kw_only=True)
-    conformance_classes: list[str] = attr.ib(default=attr.Factory(list), kw_only=True)
+    conformance_classes: list[str] = attr.ib(
+        default=attr.Factory(lambda: CATALOGS_TRANSACTION_CONFORMANCE.copy()),
+        kw_only=True,
+    )
     router: APIRouter = attr.ib(factory=APIRouter, kw_only=True)
     response_class: Type[Response] = attr.ib(default=JSONResponse, kw_only=True)
 
@@ -318,6 +330,11 @@ class CatalogsTransactionExtension(ApiExtension):
             app: target FastAPI application.
         """
         self.router.prefix = app.state.router_prefix
+
+        # Inject transaction conformance into the shared catalog state
+        if not hasattr(app.state, "catalogs_conformance_classes"):
+            app.state.catalogs_conformance_classes = set()
+        app.state.catalogs_conformance_classes.update(self.conformance_classes)
 
         # POST /catalogs
         self.router.add_api_route(

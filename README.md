@@ -167,8 +167,6 @@ from stac_fastapi.types.config import ApiSettings
 from stac_fastapi_catalogs_extension import (
     CatalogsExtension,
     CatalogsTransactionExtension,
-    CATALOGS_CORE_CONFORMANCE,
-    CATALOGS_TRANSACTION_CONFORMANCE,
 )
 from my_project.catalogs_client import CatalogsClient
 from my_project.core_client import CoreClient
@@ -185,8 +183,6 @@ api = StacApi(
     extensions=[
         CatalogsExtension(
             client=catalogs_client,
-            conformance_classes=list(CATALOGS_CORE_CONFORMANCE)
-            + list(CATALOGS_TRANSACTION_CONFORMANCE),
             settings=settings.model_dump(),
         ),
         CatalogsTransactionExtension(
@@ -198,6 +194,9 @@ api = StacApi(
 
 app = api.app
 ```
+
+The transaction conformance class is automatically registered when
+`CatalogsTransactionExtension` is included.
 
 ## Backend client requirements
 

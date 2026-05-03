@@ -19,7 +19,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [v0.2.0] - 2026-10-14
 
-- Split Catalogs Client into core client and transaction client
+### Added
+
+- Split Catalogs extension into two classes:
+  - `CatalogsExtension`: Read-only discovery endpoints
+  - `CatalogsTransactionExtension`: Write operations (POST, PUT, DELETE)
+- Dynamic conformance class registration via `app.state` for seamless extension composition
+
+### Changed
+
+- **BREAKING**: `CatalogsExtension` no longer accepts `enable_transactions` parameter. Use `CatalogsTransactionExtension` separately for write operations.
+- Conformance classes are now explicitly passed during initialization, following standard STAC FastAPI extension patterns.
+
+### Fixed
+
+- Pinned `httpx<0.28` to prevent URL parsing breaking changes in httpx 0.28.0+
 
 ## [v0.1.3] - 2026-04-10
 
