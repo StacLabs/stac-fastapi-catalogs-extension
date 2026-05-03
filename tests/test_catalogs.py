@@ -1,6 +1,5 @@
 """Tests for the Catalogs extension."""
 
-from collections.abc import Iterator
 from datetime import datetime
 
 import pytest
@@ -16,7 +15,10 @@ from stac_pydantic.item_collection import ItemCollection
 from starlette.responses import Response
 from starlette.testclient import TestClient
 
-from stac_fastapi_catalogs_extension import CatalogsExtension
+from stac_fastapi_catalogs_extension import (
+    CatalogsExtension,
+    CatalogsTransactionExtension,
+)
 from stac_fastapi_catalogs_extension.client import AsyncBaseCatalogsClient
 from stac_fastapi_catalogs_extension.types import Catalogs, Children, ObjectUri
 
@@ -416,7 +418,7 @@ def catalogs_client() -> DummyCatalogsClient:
 @pytest.fixture
 def client(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
-) -> Iterator[TestClient]:
+) -> TestClient:
     """Fixture for test client with transactions enabled."""
     settings = ApiSettings()
     api = StacApi(
@@ -425,7 +427,34 @@ def client(
         extensions=[
             CatalogsExtension(
                 client=catalogs_client,
-                enable_transactions=True,
+                settings=settings.model_dump(),
+            ),
+            CatalogsTransactionExtension(
+                client=catalogs_client,
+                settings=settings.model_dump(),
+            ),
+        ],
+    )
+    with TestClient(api.app) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def client_with_transactions(
+    core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
+) -> TestClient:
+    """Fixture for test client with transactions enabled."""
+    settings = ApiSettings()
+    api = StacApi(
+        settings=settings,
+        client=core_client,
+        extensions=[
+            CatalogsExtension(
+                client=catalogs_client,
+                settings=settings.model_dump(),
+            ),
+            CatalogsTransactionExtension(
+                client=catalogs_client,
                 settings=settings.model_dump(),
             ),
         ],
@@ -437,7 +466,7 @@ def client(
 @pytest.fixture
 def client_readonly(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
-) -> Iterator[TestClient]:
+) -> TestClient:
     """Fixture for test client with transactions disabled (read-only)."""
     settings = ApiSettings()
     api = StacApi(
@@ -446,7 +475,6 @@ def client_readonly(
         extensions=[
             CatalogsExtension(
                 client=catalogs_client,
-                enable_transactions=False,
                 settings=settings.model_dump(),
             ),
         ],

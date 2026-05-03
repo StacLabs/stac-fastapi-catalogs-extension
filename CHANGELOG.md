@@ -17,6 +17,24 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+## [v0.2.0] - 2026-10-14
+
+### Added
+
+- Split Catalogs extension into two classes:
+  - `CatalogsExtension`: Read-only discovery endpoints
+  - `CatalogsTransactionExtension`: Write operations (POST, PUT, DELETE)
+- Dynamic conformance class registration via `app.state` for seamless extension composition
+
+### Changed
+
+- **BREAKING**: `CatalogsExtension` no longer accepts `enable_transactions` parameter. Use `CatalogsTransactionExtension` separately for write operations.
+- Conformance classes are now explicitly passed during initialization, following standard STAC FastAPI extension patterns.
+
+### Fixed
+
+- Pinned `httpx<0.28` to prevent URL parsing breaking changes in httpx 0.28.0+
+
 ## [v0.1.3] - 2026-04-10
 
 ### Updated
@@ -65,7 +83,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 	with the Black profile.
 
 
-[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.2...main
+[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.2.0...main
+[v0.2.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.2...v0.2.0
 [v0.1.2]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/releases/tag/v0.1.0
