@@ -258,6 +258,35 @@ class AsyncBaseCatalogsClient(abc.ABC):
         ...
 
     @abc.abstractmethod
+    async def update_catalog_collection(
+        self,
+        catalog_id: str,
+        collection_id: str,
+        collection: Collection,
+        request: Request | None = None,
+        **kwargs,
+    ) -> Collection | Response:
+        """Update a collection within a catalog context.
+
+        Updates the metadata (Title, Description, etc.) of the collection
+        within the scoped catalog context. This operation preserves the
+        collection's structural links (parent_ids) to maintain the poly-hierarchy.
+
+        For normative rules regarding Safety-First architecture during updates,
+        see the Multi-Tenant Catalogs specification.
+
+        Args:
+            catalog_id: The ID of the catalog.
+            collection_id: The ID of the collection.
+            collection: The updated collection data.
+            request: Optional FastAPI request object.
+
+        Returns:
+            The updated collection.
+        """
+        ...
+
+    @abc.abstractmethod
     async def get_catalog_collection_items(
         self,
         catalog_id: str,

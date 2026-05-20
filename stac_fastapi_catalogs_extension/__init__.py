@@ -1,4 +1,4 @@
-"""Catalogs extension module."""
+"""stac-fastapi-catalogs-extension: Multi-tenant catalog hierarchies for STAC FastAPI."""
 
 from .catalogs import (
     CATALOGS_CORE_CONFORMANCE,

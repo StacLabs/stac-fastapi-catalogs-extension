@@ -31,19 +31,20 @@ from .types import (
     CreateSubCatalogRequest,
     SubCatalogsRequest,
     UnlinkSubCatalogRequest,
+    UpdateCatalogCollectionRequest,
     UpdateCatalogRequest,
 )
 
 # Conformance Classes
 CATALOGS_CORE_CONFORMANCE = [
     "https://api.stacspec.org/v1.0.0/core",
-    "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs",
+    "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs",
     "https://api.stacspec.org/v1.0.0-rc.2/children",
     "https://api.stacspec.org/v1.0.0-rc.2/children#type-filter",
 ]
 
 CATALOGS_TRANSACTION_CONFORMANCE = [
-    "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs/transaction"
+    "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction"
 ]
 
 
@@ -400,6 +401,27 @@ class CatalogsTransactionExtension(ApiExtension):
             summary="Create Catalog Collection",
             description=(
                 "Create a new collection or link an existing one to this catalog."
+            ),
+            tags=["Catalogs"],
+        )
+
+        # PUT /catalogs/{catalog_id}/collections/{collection_id}
+        self.router.add_api_route(
+            name="Update Catalog Collection",
+            path="/catalogs/{catalog_id}/collections/{collection_id}",
+            methods=["PUT"],
+            status_code=HTTP_200_OK,
+            endpoint=create_async_endpoint(
+                self.client.update_catalog_collection, UpdateCatalogCollectionRequest
+            ),
+            response_model=Collection
+            if self.settings.get("enable_response_models", True)
+            else None,
+            response_class=self.response_class,
+            summary="Update Catalog Collection",
+            description=(
+                "Update collection metadata within a catalog context. "
+                "Preserves structural links to maintain poly-hierarchy."
             ),
             tags=["Catalogs"],
         )

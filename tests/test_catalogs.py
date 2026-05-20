@@ -259,6 +259,16 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient):
     ) -> None:
         return None
 
+    async def update_catalog_collection(
+        self,
+        catalog_id: str,
+        collection_id: str,
+        collection: Collection,
+        request: Request | None = None,
+        **kwargs,
+    ) -> Collection | Response:
+        return collection
+
     async def get_catalog_collection_items(
         self,
         catalog_id: str,
@@ -533,6 +543,29 @@ def test_update_catalog(client: TestClient) -> None:
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["id"] == "test-catalog-1"
+
+
+def test_update_catalog_collection(client: TestClient) -> None:
+    """Test PUT /catalogs/{catalog_id}/collections/{collection_id} endpoint."""
+    collection_data = {
+        "type": "Collection",
+        "id": "collection-1",
+        "description": "Updated collection description",
+        "stac_version": "1.0.0",
+        "license": "MIT",
+        "extent": {
+            "spatial": {"bbox": [[-180, -90, 180, 90]]},
+            "temporal": {"interval": [["2021-01-01T00:00:00Z", None]]},
+        },
+        "links": [],
+    }
+    response = client.put(
+        "/catalogs/test-catalog-1/collections/collection-1", json=collection_data
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["id"] == "collection-1"
+    assert data["description"] == "Updated collection description"
 
 
 def test_delete_catalog(client: TestClient) -> None:
@@ -870,6 +903,6 @@ def test_enabled_conformance_includes_transaction_class(client: TestClient) -> N
     data = response.json()
     assert "conformsTo" in data
     transaction_class = (
-        "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs/transaction"
+        "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction"
     )
     assert transaction_class in data["conformsTo"]
