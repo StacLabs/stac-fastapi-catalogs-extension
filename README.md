@@ -71,11 +71,11 @@ according to your enabled capabilities:
 
 - Required:
 	- https://api.stacspec.org/v1.0.0/core
-	- https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs
+	- https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs
 - Recommended:
 	- https://api.stacspec.org/v1.0.0-rc.2/children
 - Optional (only if transaction endpoints are enabled):
-	- https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs/transaction
+	- https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction
 
 Operational guidance:
 
@@ -83,6 +83,12 @@ Operational guidance:
 	should not advertise the transaction conformance class.
 - If transactions are enabled, expose and document the management endpoints and
 	include the transaction conformance class in conformance responses.
+- **Important**: To preserve the poly-hierarchy DAG structure, updates to
+	collections SHOULD be performed through scoped routes
+	(`/catalogs/{catalogId}/collections/{collectionId}`) rather than the core STAC
+	route (`/collections/{collectionId}`). The core route is flat and does not
+	maintain parent-child relationships, so updates through that route may not
+	properly preserve the hierarchical context.
 
 ## Supported projects
 
@@ -211,6 +217,7 @@ required async methods, including:
 - get_catalog_collections
 - create_catalog_collection
 - get_catalog_collection
+- update_catalog_collection
 - unlink_catalog_collection
 - get_catalog_collection_items
 - get_catalog_collection_item
@@ -263,6 +270,7 @@ are available for catalog and collection management:
 - PUT /catalogs/{catalog_id}
 - DELETE /catalogs/{catalog_id}
 - POST /catalogs/{catalog_id}/collections
+- PUT /catalogs/{catalog_id}/collections/{collection_id}
 - DELETE /catalogs/{catalog_id}/collections/{collection_id}
 - POST /catalogs/{catalog_id}/catalogs
 - DELETE /catalogs/{catalog_id}/catalogs/{sub_catalog_id}

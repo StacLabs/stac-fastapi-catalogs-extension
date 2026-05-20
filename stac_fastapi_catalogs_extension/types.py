@@ -151,6 +151,13 @@ class CreateCatalogCollectionRequest(CatalogsUri):
 
 
 @attr.s
+class UpdateCatalogCollectionRequest(CatalogCollectionUri):
+    """Update catalog collection with body."""
+
+    collection: Annotated[Collection, Body()] = attr.ib(default=None)
+
+
+@attr.s
 class CreateSubCatalogRequest(CatalogsUri):
     """Create sub-catalog with body."""
 

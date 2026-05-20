@@ -17,7 +17,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
-## [v0.2.0] - 2026-10-14
+## [v0.3.0] - 2026-05-20
+
+### Added
+
+- `update_catalog_collection` method and PUT /catalogs/{catalog_id}/collections/{collection_id} endpoint for updating collection metadata within a catalog context
+
+### Changed
+
+- Updated conformance class URIs from beta.4 to rc.1:
+  - https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs
+  - https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction
+
+## [v0.2.0] - 2026-05-02
 
 ### Added
 
@@ -83,7 +95,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 	with the Black profile.
 
 
-[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.2.0...main
+[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.3.0...main
+[v0.3.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.2...v0.2.0
 [v0.1.2]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.0...v0.1.1
