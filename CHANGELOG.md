@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- `hide_alternate_parents` configuration flag to optionally disable advertising
-  alternative parents in poly-hierarchy via `rel="related"` links. Useful for
-  multi-tenant deployments to prevent information leakage about other tenants.
-
 ### Updated
 
 ### Changed
@@ -20,6 +16,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Removed
 
 ### Fixed
+
+## [v0.4.0] - 2026-06-08
+
+### Added
+
+- `hide_alternate_parents` configuration flag to optionally disable advertising
+  alternative parents in poly-hierarchy via `rel="related"` links. Useful for
+  multi-tenant deployments to prevent information leakage about other tenants. [#14](https://github.com/StacLabs/stac-fastapi-catalogs-extension/pull/14)
 
 ## [v0.3.0] - 2026-05-20
 
@@ -99,7 +103,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 	with the Black profile.
 
 
-[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.3.0...main
+[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.4.0...main
+[v0.4.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.2...v0.2.0
 [v0.1.2]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.1...v0.1.2
