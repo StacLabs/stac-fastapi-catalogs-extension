@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- `hide_alternate_parents` configuration flag to optionally disable advertising
+  alternative parents in poly-hierarchy via `rel="related"` links. Useful for
+  multi-tenant deployments to prevent information leakage about other tenants.
+
 ### Updated
 
 ### Changed
