@@ -70,6 +70,9 @@ class CatalogsExtension(ApiExtension):
         conformance_classes: List of conformance classes for this extension.
         router: FastAPI router for the extension endpoints.
         response_class: Response class for the extension.
+        hide_alternate_parents: If True, do not advertise rel="related" links to
+            alternative parents in poly-hierarchy. Useful for multi-tenant deployments
+            to prevent information leakage about other tenants.
     """
 
     client: AsyncBaseCatalogsClient = attr.ib(kw_only=True)
@@ -79,6 +82,7 @@ class CatalogsExtension(ApiExtension):
     )
     router: APIRouter = attr.ib(factory=APIRouter, kw_only=True)
     response_class: Type[Response] = attr.ib(default=JSONResponse, kw_only=True)
+    hide_alternate_parents: bool = attr.ib(default=False, kw_only=True)
 
     def register(self, app: FastAPI) -> None:
         """Register the extension with a FastAPI application.
@@ -92,6 +96,9 @@ class CatalogsExtension(ApiExtension):
         if not hasattr(app.state, "catalogs_conformance_classes"):
             app.state.catalogs_conformance_classes = set()
         app.state.catalogs_conformance_classes.update(self.conformance_classes)
+
+        # Store hide_alternate_parents flag for client access
+        app.state.catalogs_hide_alternate_parents = self.hide_alternate_parents
 
         # GET /catalogs
         self.router.add_api_route(

@@ -90,6 +90,23 @@ Operational guidance:
 	maintain parent-child relationships, so updates through that route may not
 	properly preserve the hierarchical context.
 
+### Multi-Tenant Security
+
+For multi-tenant deployments where you want to prevent information leakage about
+other tenants, use the `hide_alternate_parents` flag:
+
+```python
+CatalogsExtension(
+    client=catalogs_client,
+    hide_alternate_parents=True,  # Disables rel="related" links to alternative parents
+)
+```
+
+When `hide_alternate_parents=True`, the API will only advertise the single
+contextual parent through `rel="parent"` and will not expose alternative parents
+via `rel="related"` links. This prevents clients from discovering the names and
+structure of other tenants in the system.
+
 ## Supported projects
 
 This extension is designed for STAC FastAPI deployment applications and is

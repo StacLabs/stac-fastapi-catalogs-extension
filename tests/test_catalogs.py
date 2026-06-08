@@ -906,3 +906,38 @@ def test_enabled_conformance_includes_transaction_class(client: TestClient) -> N
         "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction"
     )
     assert transaction_class in data["conformsTo"]
+
+
+def test_hide_alternate_parents_flag() -> None:
+    """Test that hide_alternate_parents flag is properly stored in app.state."""
+    settings = ApiSettings()
+    api = StacApi(
+        settings=settings,
+        client=DummyCoreClient(),
+        extensions=[
+            CatalogsExtension(
+                client=DummyCatalogsClient(),
+                settings=settings.model_dump(),
+                hide_alternate_parents=True,
+            ),
+        ],
+    )
+    assert hasattr(api.app.state, "catalogs_hide_alternate_parents")
+    assert api.app.state.catalogs_hide_alternate_parents is True
+
+
+def test_hide_alternate_parents_flag_default() -> None:
+    """Test that hide_alternate_parents defaults to False."""
+    settings = ApiSettings()
+    api = StacApi(
+        settings=settings,
+        client=DummyCoreClient(),
+        extensions=[
+            CatalogsExtension(
+                client=DummyCatalogsClient(),
+                settings=settings.model_dump(),
+            ),
+        ],
+    )
+    assert hasattr(api.app.state, "catalogs_hide_alternate_parents")
+    assert api.app.state.catalogs_hide_alternate_parents is False
