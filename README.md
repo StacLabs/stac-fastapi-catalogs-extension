@@ -230,6 +230,7 @@ The transaction conformance class is automatically registered when
 ```python
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.types.config import ApiSettings
+from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest
 
 from stac_fastapi_catalogs_extension import (
     CatalogsExtension,
@@ -245,6 +246,12 @@ settings = ApiSettings()
 core_client = CoreClient(...)
 catalogs_client = CatalogsClient(...)
 
+# In a real deployment, these models are generated dynamically by 
+# your search extensions (e.g., FilterExtension, SortExtension).
+# We pass them to CatalogsSearchExtension so scoped searches inherit them!
+get_request_model = BaseSearchGetRequest
+post_request_model = BaseSearchPostRequest
+
 api = StacApi(
     settings=settings,
     client=core_client,
@@ -255,6 +262,8 @@ api = StacApi(
         ),
         CatalogsSearchExtension(
             client=catalogs_client,
+            search_get_request_model=get_request_model,
+            search_post_request_model=post_request_model,
             conformance_classes=list(CATALOGS_SEARCH_CONFORMANCE),
             settings=settings.model_dump(),
         ),
@@ -271,6 +280,36 @@ The search conformance classes are automatically registered when
 
 Both endpoints perform recursive tree traversal to search only items in
 collections linked to the specified catalog and its descendants.
+
+**Key architectural benefit**: By injecting the dynamic core search request models,
+the scoped search endpoints automatically inherit any features added to the global
+`/search` endpoint (CQL2 filtering, sorting, field projection, etc.), ensuring
+scoped searches are always feature-complete!
+
+### Inheriting Core Search Extensions (Filter, Sort, Fields)
+
+If your core STAC API utilizes extensions that modify the global `/search` endpoint
+(such as the `FilterExtension` for CQL2, `SortExtension`, or `FieldsExtension`),
+the scoped search endpoints can automatically inherit these exact same capabilities.
+
+By passing the dynamically generated request models from your core API setup into
+the `CatalogsSearchExtension`, you guarantee that multi-tenant users have access
+to the same advanced querying features inside their sub-catalogs:
+
+```python
+# Generate models using your core stac-fastapi extensions
+get_request_model = create_get_request_model(core_extensions)
+post_request_model = create_post_request_model(core_extensions)
+
+CatalogsSearchExtension(
+    search_get_request_model=get_request_model,
+    search_post_request_model=post_request_model,
+    # ...
+)
+```
+
+This makes it crystal clear that the scoped search isn't a "second-class citizen"
+endpoint—it is functionally identical to the main search!
 
 ## Backend client requirements
 

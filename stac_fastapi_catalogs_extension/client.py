@@ -14,6 +14,7 @@ from typing import Literal
 
 import attr
 from fastapi import Request
+from stac_fastapi.types.search import BaseSearchPostRequest
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -478,7 +479,7 @@ class AsyncBaseCatalogsClient(abc.ABC):
     async def catalog_search_post(
         self,
         catalog_id: str,
-        search_request: dict,
+        search_request: BaseSearchPostRequest,
         request: Request | None = None,
         **kwargs,
     ) -> ItemCollection | Response:

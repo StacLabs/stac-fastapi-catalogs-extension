@@ -3,10 +3,11 @@
 from typing import Type
 
 import attr
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, Body, FastAPI, Path
 from fastapi.responses import JSONResponse
 from stac_fastapi.api.routes import create_async_endpoint
 from stac_fastapi.types.extension import ApiExtension
+from stac_fastapi.types.search import APIRequest
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -14,6 +15,7 @@ from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
 from starlette.responses import Response
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from typing_extensions import Annotated
 
 from .client import AsyncBaseCatalogsClient
 from .types import (
@@ -23,8 +25,6 @@ from .types import (
     CatalogCollectionsRequest,
     CatalogCollectionUri,
     Catalogs,
-    CatalogSearchGetRequest,
-    CatalogSearchPostRequest,
     CatalogsGetRequest,
     CatalogsUri,
     Children,
@@ -504,8 +504,14 @@ class CatalogsSearchExtension(ApiExtension):
     This extension provides the `GET` and `POST` search endpoints for performing
     STAC item searches strictly bounded to a catalog's descendant tree.
 
+    By injecting the dynamic core search request models, this extension automatically
+    inherits any features added to the global `/search` endpoint (CQL2, sorting,
+    field projection, etc.), ensuring scoped searches are always feature-complete.
+
     Attributes:
         client: An `AsyncBaseCatalogsClient` instance implementing the search endpoints.
+        search_get_request_model: The dynamic GET request model from core stac-fastapi.
+        search_post_request_model: The dynamic POST request model from core stac-fastapi.
         settings: Application settings dictionary.
         conformance_classes: List of search conformance classes for this extension.
         router: FastAPI router for the extension endpoints.
@@ -513,6 +519,8 @@ class CatalogsSearchExtension(ApiExtension):
     """
 
     client: AsyncBaseCatalogsClient = attr.ib(kw_only=True)
+    search_get_request_model: Type[APIRequest] = attr.ib(kw_only=True)
+    search_post_request_model: Type[APIRequest] = attr.ib(kw_only=True)
     settings: dict = attr.ib(default=attr.Factory(dict), kw_only=True)
     conformance_classes: list[str] = attr.ib(
         default=attr.Factory(lambda: CATALOGS_SEARCH_CONFORMANCE.copy()), kw_only=True
@@ -528,6 +536,27 @@ class CatalogsSearchExtension(ApiExtension):
         if not hasattr(app.state, "catalogs_conformance_classes"):
             app.state.catalogs_conformance_classes = set()
         app.state.catalogs_conformance_classes.update(self.conformance_classes)
+
+        # Dynamically create request models that inherit both the core STAC search
+        # parameters AND the catalog_id path parameter. This ensures scoped searches
+        # automatically inherit any features added to the global /search endpoint.
+        get_request_model: Type[APIRequest] = self.search_get_request_model
+        post_request_model: Type[APIRequest] = self.search_post_request_model
+
+        @attr.s
+        class CatalogSearchGetRequest(get_request_model):  # type: ignore
+            catalog_id: Annotated[str, Path(description="Catalog ID")] = attr.ib(
+                kw_only=True
+            )
+
+        @attr.s
+        class CatalogSearchPostRequest(APIRequest):
+            catalog_id: Annotated[str, Path(description="Catalog ID")] = attr.ib(
+                kw_only=True
+            )
+            search_request: Annotated[post_request_model, Body()] = attr.ib(  # type: ignore
+                default=None, kw_only=True
+            )
 
         # GET /catalogs/{catalog_id}/search
         self.router.add_api_route(

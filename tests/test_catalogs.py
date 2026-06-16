@@ -7,6 +7,7 @@ from fastapi import Request
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
+from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -454,7 +455,7 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient):
     async def catalog_search_post(
         self,
         catalog_id: str,
-        search_request: dict,
+        search_request: BaseSearchPostRequest,
         request: Request | None = None,
         **kwargs,
     ) -> ItemCollection | Response:
@@ -1019,6 +1020,8 @@ def test_search_extension_registered() -> None:
             ),
             CatalogsSearchExtension(
                 client=DummyCatalogsClient(),
+                search_get_request_model=BaseSearchGetRequest,
+                search_post_request_model=BaseSearchPostRequest,
                 settings=settings.model_dump(),
             ),
         ],
@@ -1049,6 +1052,8 @@ def test_catalog_search_get(
             ),
             CatalogsSearchExtension(
                 client=catalogs_client,
+                search_get_request_model=BaseSearchGetRequest,
+                search_post_request_model=BaseSearchPostRequest,
                 settings=settings.model_dump(),
             ),
         ],
@@ -1077,6 +1082,8 @@ def test_catalog_search_get_with_filters(
             ),
             CatalogsSearchExtension(
                 client=catalogs_client,
+                search_get_request_model=BaseSearchGetRequest,
+                search_post_request_model=BaseSearchPostRequest,
                 settings=settings.model_dump(),
             ),
         ],
@@ -1108,6 +1115,8 @@ def test_catalog_search_post(
             ),
             CatalogsSearchExtension(
                 client=catalogs_client,
+                search_get_request_model=BaseSearchGetRequest,
+                search_post_request_model=BaseSearchPostRequest,
                 settings=settings.model_dump(),
             ),
         ],

@@ -5,12 +5,7 @@ from typing import Literal
 import attr
 from fastapi import Body, Path, Query
 from pydantic import BaseModel
-from stac_fastapi.types.search import (
-    APIRequest,
-    BaseSearchPostRequest,
-    _bbox_converter,
-    str2list,
-)
+from stac_fastapi.types.search import APIRequest, _bbox_converter
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
 from stac_pydantic.links import Links
@@ -63,41 +58,6 @@ class CatalogCollectionItemUri(CatalogCollectionUri):
     """Combines catalog_id, collection_id, and item_id."""
 
     item_id: Annotated[str, Path(description="Item ID")] = attr.ib()
-
-
-@attr.s
-class CatalogSearchGetRequest(CatalogsUri):
-    """Parameters for GET /catalogs/{catalog_id}/search endpoint."""
-
-    collections: Annotated[
-        list[str] | None,
-        Query(description="Array of collection IDs to search"),
-    ] = attr.ib(default=None, converter=lambda x: str2list(x) if x else None)
-    ids: Annotated[
-        list[str] | None,
-        Query(description="Array of item IDs to search for"),
-    ] = attr.ib(default=None, converter=lambda x: str2list(x) if x else None)
-    bbox: Annotated[
-        BBox | None,
-        Query(description="Bounding box to filter items [minx, miny, maxx, maxy]"),
-    ] = attr.ib(
-        default=None,
-        converter=lambda x: _bbox_converter(x) if x is not None else None,
-    )
-    intersects: Annotated[
-        str | None,
-        Query(description="GeoJSON geometry for spatial filtering"),
-    ] = attr.ib(default=None)
-    datetime: Annotated[
-        str | None, Query(description="Datetime to filter items")
-    ] = attr.ib(default=None)
-    limit: Annotated[
-        int | None,
-        Query(ge=1, le=10000, description="Maximum number of items to return"),
-    ] = attr.ib(default=10)
-    token: Annotated[str | None, Query(description="Pagination token")] = attr.ib(
-        default=None
-    )
 
 
 @attr.s
@@ -167,13 +127,6 @@ class CatalogChildrenRequest(CatalogsUri):
 
 
 # --- Request Models with Body for Transaction Endpoints ---
-
-
-@attr.s
-class CatalogSearchPostRequest(CatalogsUri):
-    """Parameters for POST /catalogs/{catalog_id}/search endpoint."""
-
-    search_request: Annotated[BaseSearchPostRequest, Body()] = attr.ib(default=None)
 
 
 @attr.s
