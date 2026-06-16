@@ -21,11 +21,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-
+- `CatalogsSearchExtension` class for scoped search endpoints:
+  - `GET /catalogs/{catalog_id}/search` - Query parameter-based scoped search
+  - `POST /catalogs/{catalog_id}/search` - JSON body-based scoped search
+- `get_all_descendant_collections()` abstract method to `AsyncBaseCatalogsClient` for
+  recursive tree traversal (DAG crawl) to support scoped search
+- `catalog_search_get()` and `catalog_search_post()` abstract methods for implementing
+  scoped search in backend clients
+- `CatalogSearchGetRequest` and `CatalogSearchPostRequest` request models
+- `CATALOGS_SEARCH_CONFORMANCE` conformance classes for search endpoints
 
 ### Removed
 
-- Removed httpx from dependencies
+- Removed httpx from main dependencies (moved to dev dependencies)
 
 ## [v0.4.0] - 2026-06-08
 

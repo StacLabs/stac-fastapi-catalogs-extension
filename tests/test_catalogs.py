@@ -412,6 +412,68 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient):
     ) -> None:
         return None
 
+    async def get_all_descendant_collections(
+        self,
+        catalog_id: str,
+        request: Request | None = None,
+        **kwargs,
+    ) -> list[str]:
+        return ["test-collection", "test-collection-2"]
+
+    async def catalog_search_get(
+        self,
+        catalog_id: str,
+        collections: list[str] | None = None,
+        ids: list[str] | None = None,
+        bbox: list[float] | None = None,
+        intersects: str | None = None,
+        datetime: str | None = None,
+        limit: int | None = None,
+        token: str | None = None,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ItemCollection | Response:
+        return ItemCollection(
+            type="FeatureCollection",
+            features=[
+                Item(
+                    type="Feature",
+                    id="test-item",
+                    geometry={"type": "Point", "coordinates": [0, 0]},
+                    bbox=[0, 0, 0, 0],
+                    datetime="2024-01-01T00:00:00Z",
+                    properties={"datetime": "2024-01-01T00:00:00Z"},
+                    links=[],
+                    assets={},
+                )
+            ],
+            links=[],
+        )
+
+    async def catalog_search_post(
+        self,
+        catalog_id: str,
+        search_request: dict,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ItemCollection | Response:
+        return ItemCollection(
+            type="FeatureCollection",
+            features=[
+                Item(
+                    type="Feature",
+                    id="test-item",
+                    geometry={"type": "Point", "coordinates": [0, 0]},
+                    bbox=[0, 0, 0, 0],
+                    datetime="2024-01-01T00:00:00Z",
+                    properties={"datetime": "2024-01-01T00:00:00Z"},
+                    links=[],
+                    assets={},
+                )
+            ],
+            links=[],
+        )
+
 
 @pytest.fixture
 def core_client() -> DummyCoreClient:

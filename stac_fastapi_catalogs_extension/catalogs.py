@@ -23,6 +23,8 @@ from .types import (
     CatalogCollectionsRequest,
     CatalogCollectionUri,
     Catalogs,
+    CatalogSearchGetRequest,
+    CatalogSearchPostRequest,
     CatalogsGetRequest,
     CatalogsUri,
     Children,
@@ -45,6 +47,11 @@ CATALOGS_CORE_CONFORMANCE = [
 
 CATALOGS_TRANSACTION_CONFORMANCE = [
     "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction"
+]
+
+CATALOGS_SEARCH_CONFORMANCE = [
+    "https://api.stacspec.org/v1.0.0/item-search",
+    "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search",
 ]
 
 
@@ -488,3 +495,72 @@ class CatalogsTransactionExtension(ApiExtension):
         )
 
         app.include_router(self.router, tags=["Catalogs"])
+
+
+@attr.s
+class CatalogsSearchExtension(ApiExtension):
+    """Catalogs Search Extension (Recursive Scoped Search).
+
+    This extension provides the `GET` and `POST` search endpoints for performing
+    STAC item searches strictly bounded to a catalog's descendant tree.
+
+    Attributes:
+        client: An `AsyncBaseCatalogsClient` instance implementing the search endpoints.
+        settings: Application settings dictionary.
+        conformance_classes: List of search conformance classes for this extension.
+        router: FastAPI router for the extension endpoints.
+        response_class: Response class for the extension.
+    """
+
+    client: AsyncBaseCatalogsClient = attr.ib(kw_only=True)
+    settings: dict = attr.ib(default=attr.Factory(dict), kw_only=True)
+    conformance_classes: list[str] = attr.ib(
+        default=attr.Factory(lambda: CATALOGS_SEARCH_CONFORMANCE.copy()), kw_only=True
+    )
+    router: APIRouter = attr.ib(factory=APIRouter, kw_only=True)
+    response_class: Type[Response] = attr.ib(default=JSONResponse, kw_only=True)
+
+    def register(self, app: FastAPI) -> None:
+        """Register the search extension with a FastAPI application."""
+        self.router.prefix = app.state.router_prefix
+
+        # Inject search conformance into the shared catalog state
+        if not hasattr(app.state, "catalogs_conformance_classes"):
+            app.state.catalogs_conformance_classes = set()
+        app.state.catalogs_conformance_classes.update(self.conformance_classes)
+
+        # GET /catalogs/{catalog_id}/search
+        self.router.add_api_route(
+            name="Catalog Scoped Search (GET)",
+            path="/catalogs/{catalog_id}/search",
+            methods=["GET"],
+            endpoint=create_async_endpoint(
+                self.client.catalog_search_get, CatalogSearchGetRequest
+            ),
+            response_model=ItemCollection
+            if self.settings.get("enable_response_models", True)
+            else None,
+            response_class=self.response_class,
+            summary="Catalog Scoped Search",
+            description="Search items in a catalog's descendant tree using query parameters.",
+            tags=["Catalogs Search"],
+        )
+
+        # POST /catalogs/{catalog_id}/search
+        self.router.add_api_route(
+            name="Catalog Scoped Search (POST)",
+            path="/catalogs/{catalog_id}/search",
+            methods=["POST"],
+            endpoint=create_async_endpoint(
+                self.client.catalog_search_post, CatalogSearchPostRequest
+            ),
+            response_model=ItemCollection
+            if self.settings.get("enable_response_models", True)
+            else None,
+            response_class=self.response_class,
+            summary="Catalog Scoped Search",
+            description="Search items in a catalog's descendant tree using a JSON payload.",
+            tags=["Catalogs Search"],
+        )
+
+        app.include_router(self.router, tags=["Catalogs Search"])

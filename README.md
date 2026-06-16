@@ -124,11 +124,12 @@ the AsyncBaseCatalogsClient contract.
 
 ## What this package provides
 
-- Two STAC FastAPI extension classes:
+- Three STAC FastAPI extension classes:
   - `CatalogsExtension`: Read-only discovery endpoints for catalogs
   - `CatalogsTransactionExtension`: Write operations (POST, PUT, DELETE) for catalog management
-- Request/response models for catalogs and children APIs
-- An abstract client contract: AsyncBaseCatalogsClient
+  - `CatalogsSearchExtension`: Scoped search endpoints bounded to a catalog's descendant tree
+- Request/response models for catalogs, children, and search APIs
+- An abstract client contract: `AsyncBaseCatalogsClient` with tree-traversal support
 
 This package wires routes and validation into your API. Your deployment app is
 responsible for providing a concrete client implementation backed by your
@@ -144,8 +145,8 @@ pip install stac-fastapi-catalogs-extension
 
 In your deployment app.py (for example in
 stac-fastapi-elasticsearch-opensearch), instantiate StacApi with
-CatalogsExtension and optionally CatalogsTransactionExtension, passing an
-implementation of AsyncBaseCatalogsClient.
+`CatalogsExtension` and optionally `CatalogsTransactionExtension` and/or
+`CatalogsSearchExtension`, passing an implementation of `AsyncBaseCatalogsClient`.
 
 ### Read-only deployment (discovery only)
 
@@ -221,6 +222,53 @@ app = api.app
 The transaction conformance class is automatically registered when
 `CatalogsTransactionExtension` is included.
 
+### With scoped search support
+
+```python
+from stac_fastapi.api.app import StacApi
+from stac_fastapi.types.config import ApiSettings
+
+from stac_fastapi_catalogs_extension import (
+    CatalogsExtension,
+    CatalogsSearchExtension,
+    CATALOGS_SEARCH_CONFORMANCE,
+)
+from my_project.catalogs_client import CatalogsClient
+from my_project.core_client import CoreClient
+
+
+settings = ApiSettings()
+
+core_client = CoreClient(...)
+catalogs_client = CatalogsClient(...)
+
+api = StacApi(
+    settings=settings,
+    client=core_client,
+    extensions=[
+        CatalogsExtension(
+            client=catalogs_client,
+            settings=settings.model_dump(),
+        ),
+        CatalogsSearchExtension(
+            client=catalogs_client,
+            conformance_classes=list(CATALOGS_SEARCH_CONFORMANCE),
+            settings=settings.model_dump(),
+        ),
+    ],
+)
+
+app = api.app
+```
+
+The search conformance classes are automatically registered when
+`CatalogsSearchExtension` is included. This enables scoped search via:
+- `GET /catalogs/{catalog_id}/search` - Query parameter-based search
+- `POST /catalogs/{catalog_id}/search` - JSON body-based search
+
+Both endpoints perform recursive tree traversal to search only items in
+collections linked to the specified catalog and its descendants.
+
 ## Backend client requirements
 
 Your CatalogsClient should subclass AsyncBaseCatalogsClient and implement the
@@ -244,6 +292,9 @@ required async methods, including:
 - get_catalog_children
 - get_catalog_conformance
 - get_catalog_queryables
+- get_all_descendant_collections (required for scoped search)
+- catalog_search_get (required for scoped search)
+- catalog_search_post (required for scoped search)
 
 ## Notes for common deployment repos
 

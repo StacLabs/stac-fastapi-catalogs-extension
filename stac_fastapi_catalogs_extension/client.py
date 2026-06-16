@@ -413,6 +413,90 @@ class AsyncBaseCatalogsClient(abc.ABC):
         """
         ...
 
+    @abc.abstractmethod
+    async def get_all_descendant_collections(
+        self,
+        catalog_id: str,
+        request: Request | None = None,
+        **kwargs,
+    ) -> list[str]:
+        """Get all collection IDs in a catalog's descendant tree.
+
+        This method must perform a recursive tree traversal (DAG) to find all
+        collections linked directly to this catalog, as well as any collections
+        linked to sub-catalogs at any depth beneath this catalog.
+
+        For performance, backends should implement this using native database
+        traversal (e.g., PostgreSQL WITH RECURSIVE) or optimized batch queries
+        (e.g., Elasticsearch mget).
+
+        Args:
+            catalog_id: The ID of the root catalog for the search.
+            request: Optional FastAPI request object.
+
+        Returns:
+            A list of collection IDs that fall within the tenant's tree.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def catalog_search_get(
+        self,
+        catalog_id: str,
+        collections: list[str] | None = None,
+        ids: list[str] | None = None,
+        bbox: list[float] | None = None,
+        intersects: str | None = None,
+        datetime: str | None = None,
+        limit: int | None = None,
+        token: str | None = None,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ItemCollection | Response:
+        """Search items in a catalog's descendant tree using query parameters.
+
+        This endpoint performs a scoped search bounded to the specified catalog
+        and its descendants, supporting recursive tree traversal.
+
+        Args:
+            catalog_id: The ID of the catalog to search within.
+            collections: Array of collection IDs to search.
+            ids: Array of item IDs to search for.
+            bbox: Bounding box to filter items [minx, miny, maxx, maxy].
+            intersects: GeoJSON geometry for spatial filtering.
+            datetime: Datetime to filter items.
+            limit: Maximum number of items to return.
+            token: Pagination token.
+            request: Optional FastAPI request object.
+
+        Returns:
+            ItemCollection containing matching items.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def catalog_search_post(
+        self,
+        catalog_id: str,
+        search_request: dict,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ItemCollection | Response:
+        """Search items in a catalog's descendant tree using a JSON payload.
+
+        This endpoint performs a scoped search bounded to the specified catalog
+        and its descendants, supporting recursive tree traversal.
+
+        Args:
+            catalog_id: The ID of the catalog to search within.
+            search_request: Search request body (BaseSearchPostRequest).
+            request: Optional FastAPI request object.
+
+        Returns:
+            ItemCollection containing matching items.
+        """
+        ...
+
 
 @attr.s
 class BaseCatalogsClient(abc.ABC):
