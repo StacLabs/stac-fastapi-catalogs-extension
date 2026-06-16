@@ -32,7 +32,7 @@ links.
 | Project | Status | Notes |
 | --- | --- | --- |
 | [stac-fastapi-elasticsearch-opensearch (SFEOS)](https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch) | Implemented | Active integration target for this extension |
-| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Not implemented yet | In Progress: https://github.com/stac-utils/stac-fastapi-pgstac/pull/366 |
+| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Implemented | Active integration target for this extension |
 | [stac-fastapi-mongo](https://github.com/stac-utils/stac-fastapi-mongo) | Not implemented yet | Planned |
 
 _Last verified: 2026-03-22_
@@ -113,10 +113,10 @@ This extension is designed for STAC FastAPI deployment applications and is
 currently supported in:
 
 - SFEOS: https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch
+- stac-fastapi-pgstac: https://github.com/stac-utils/stac-fastapi-pgstac
 
 Planned (not yet implemented):
 
-- stac-fastapi-pgstac: https://github.com/stac-utils/stac-fastapi-pgstac
 - stac-fastapi-mongo: https://github.com/stac-utils/stac-fastapi-mongo
 
 It can also be integrated into custom STAC FastAPI deployments that implement
@@ -254,7 +254,7 @@ required async methods, including:
 - Reuse your existing core client for global /collections and /search routes.
 - Add CatalogsExtension to the extensions list in app.py as shown above.
 
-### stac-fastapi-pgstac style deployment (planned)
+### stac-fastapi-pgstac style deployment
 
 - Build a catalogs client that maps these methods to SQL functions or pgstac
   tables/views that represent catalog hierarchy and scoped membership.
