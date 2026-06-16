@@ -40,13 +40,13 @@ from .types import (
 # Conformance Classes
 CATALOGS_CORE_CONFORMANCE = [
     "https://api.stacspec.org/v1.0.0/core",
-    "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs",
+    "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs",
     "https://api.stacspec.org/v1.0.0-rc.2/children",
     "https://api.stacspec.org/v1.0.0-rc.2/children#type-filter",
 ]
 
 CATALOGS_TRANSACTION_CONFORMANCE = [
-    "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction"
+    "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction"
 ]
 
 CATALOGS_SEARCH_CONFORMANCE = [

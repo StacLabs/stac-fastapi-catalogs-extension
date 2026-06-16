@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Removed httpx from main dependencies (moved to dev dependencies)
 
+### Updated
+
+- Updated the Multi-Tenant Catalogs specification version from rc.1 to rc.2
+
 ## [v0.4.0] - 2026-06-08
 
 ### Added

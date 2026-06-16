@@ -71,11 +71,14 @@ according to your enabled capabilities:
 
 - Required:
 	- https://api.stacspec.org/v1.0.0/core
-	- https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs
+	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs
 - Recommended:
 	- https://api.stacspec.org/v1.0.0-rc.2/children
 - Optional (only if transaction endpoints are enabled):
-	- https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction
+	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction
+- Optional (only if scoped search endpoints are enabled):
+	- https://api.stacspec.org/v1.0.0/item-search
+	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search
 
 Operational guidance:
 

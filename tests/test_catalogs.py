@@ -17,6 +17,7 @@ from starlette.testclient import TestClient
 
 from stac_fastapi_catalogs_extension import (
     CatalogsExtension,
+    CatalogsSearchExtension,
     CatalogsTransactionExtension,
 )
 from stac_fastapi_catalogs_extension.client import AsyncBaseCatalogsClient
@@ -389,7 +390,7 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient):
         return {
             "conformsTo": [
                 "https://api.stacspec.org/v1.0.0/core",
-                "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs",
+                "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs",
             ]
         }
 
@@ -953,7 +954,7 @@ def test_readonly_conformance_excludes_transaction_class(
     data = response.json()
     assert "conformsTo" in data
     transaction_class = (
-        "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs/transaction"
+        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction"
     )
     assert transaction_class not in data["conformsTo"]
 
@@ -965,7 +966,7 @@ def test_enabled_conformance_includes_transaction_class(client: TestClient) -> N
     data = response.json()
     assert "conformsTo" in data
     transaction_class = (
-        "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction"
+        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction"
     )
     assert transaction_class in data["conformsTo"]
 
@@ -1007,8 +1008,6 @@ def test_hide_alternate_parents_flag_default() -> None:
 
 def test_search_extension_registered() -> None:
     """Test that CatalogsSearchExtension is properly registered."""
-    from stac_fastapi_catalogs_extension import CatalogsSearchExtension
-
     settings = ApiSettings()
     api = StacApi(
         settings=settings,
@@ -1025,16 +1024,20 @@ def test_search_extension_registered() -> None:
         ],
     )
     assert hasattr(api.app.state, "catalogs_conformance_classes")
-    assert "https://api.stacspec.org/v1.0.0/item-search" in api.app.state.catalogs_conformance_classes
-    assert "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search" in api.app.state.catalogs_conformance_classes
+    assert (
+        "https://api.stacspec.org/v1.0.0/item-search"
+        in api.app.state.catalogs_conformance_classes
+    )
+    assert (
+        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search"
+        in api.app.state.catalogs_conformance_classes
+    )
 
 
 def test_catalog_search_get(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
 ) -> None:
     """Test GET /catalogs/{catalog_id}/search endpoint."""
-    from stac_fastapi_catalogs_extension import CatalogsSearchExtension
-
     settings = ApiSettings()
     api = StacApi(
         settings=settings,
@@ -1063,8 +1066,6 @@ def test_catalog_search_get_with_filters(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
 ) -> None:
     """Test GET /catalogs/{catalog_id}/search with query parameters."""
-    from stac_fastapi_catalogs_extension import CatalogsSearchExtension
-
     settings = ApiSettings()
     api = StacApi(
         settings=settings,
@@ -1096,8 +1097,6 @@ def test_catalog_search_post(
     core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
 ) -> None:
     """Test POST /catalogs/{catalog_id}/search endpoint."""
-    from stac_fastapi_catalogs_extension import CatalogsSearchExtension
-
     settings = ApiSettings()
     api = StacApi(
         settings=settings,
@@ -1130,20 +1129,7 @@ def test_catalog_search_post(
 
 def test_get_all_descendant_collections(client: TestClient) -> None:
     """Test that get_all_descendant_collections is implemented."""
-    from stac_fastapi_catalogs_extension import CatalogsSearchExtension
-
-    settings = ApiSettings()
     catalogs_client = DummyCatalogsClient()
-    api = StacApi(
-        settings=settings,
-        client=DummyCoreClient(),
-        extensions=[
-            CatalogsSearchExtension(
-                client=catalogs_client,
-                settings=settings.model_dump(),
-            ),
-        ],
-    )
     # Verify the method exists and is callable
     assert hasattr(catalogs_client, "get_all_descendant_collections")
     assert callable(catalogs_client.get_all_descendant_collections)
