@@ -554,8 +554,8 @@ class CatalogsSearchExtension(ApiExtension):
             catalog_id: Annotated[str, Path(description="Catalog ID")] = attr.ib(
                 kw_only=True
             )
-            search_request: Annotated[post_request_model, Body()] = attr.ib(  # type: ignore
-                default=None, kw_only=True
+            search_request: Annotated[post_request_model, Body(...)] = attr.ib(  # type: ignore
+                kw_only=True
             )
 
         # GET /catalogs/{catalog_id}/search

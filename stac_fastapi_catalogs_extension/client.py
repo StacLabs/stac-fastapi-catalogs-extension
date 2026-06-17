@@ -426,7 +426,6 @@ class BaseCatalogsClient(abc.ABC):
     pass
 
 
-@attr.s
 class AsyncCatalogsSearchClient(abc.ABC):
     """Defines an async pattern for implementing the Scoped Search extension.
 
@@ -519,7 +518,6 @@ class AsyncCatalogsSearchClient(abc.ABC):
         ...
 
 
-@attr.s
 class BaseCatalogsSearchClient(abc.ABC):
     """Defines a synchronous pattern for implementing the Scoped Search extension.
 

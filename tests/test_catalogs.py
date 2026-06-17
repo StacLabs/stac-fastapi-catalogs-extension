@@ -1139,7 +1139,7 @@ def test_catalog_search_post(
         assert data["features"][0]["id"] == "test-item"
 
 
-def test_get_all_descendant_collections(client: TestClient) -> None:
+def test_get_all_descendant_collections() -> None:
     """Test that get_all_descendant_collections is implemented."""
     catalogs_client = DummyCatalogsClient()
     # Verify the method exists and is callable
