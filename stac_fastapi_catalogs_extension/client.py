@@ -414,6 +414,30 @@ class AsyncBaseCatalogsClient(abc.ABC):
         """
         ...
 
+
+@attr.s
+class BaseCatalogsClient(abc.ABC):
+    """Defines a synchronous pattern for implementing the STAC catalogs extension.
+
+    This is the base class for synchronous catalog client implementations.
+    For async implementations, use AsyncBaseCatalogsClient instead.
+    """
+
+    pass
+
+
+@attr.s
+class AsyncCatalogsSearchClient(abc.ABC):
+    """Defines an async pattern for implementing the Scoped Search extension.
+
+    This is an optional interface for backends that support scoped search.
+    Implement this interface alongside AsyncBaseCatalogsClient to enable
+    the CatalogsSearchExtension.
+
+    This separation respects the Interface Segregation Principle: backends
+    that only need basic discovery endpoints don't need to implement search.
+    """
+
     @abc.abstractmethod
     async def get_all_descendant_collections(
         self,
@@ -421,22 +445,18 @@ class AsyncBaseCatalogsClient(abc.ABC):
         request: Request | None = None,
         **kwargs,
     ) -> list[str]:
-        """Get all collection IDs in a catalog's descendant tree.
+        """Return all descendant collection IDs for a catalog recursively.
 
-        This method must perform a recursive tree traversal (DAG) to find all
-        collections linked directly to this catalog, as well as any collections
-        linked to sub-catalogs at any depth beneath this catalog.
-
-        For performance, backends should implement this using native database
-        traversal (e.g., PostgreSQL WITH RECURSIVE) or optimized batch queries
-        (e.g., Elasticsearch mget).
+        This method performs a depth-first traversal of the catalog's descendant
+        tree to collect all collection IDs. It is used by scoped search to determine
+        which collections should be included in the search.
 
         Args:
-            catalog_id: The ID of the root catalog for the search.
+            catalog_id: The ID of the catalog to traverse.
             request: Optional FastAPI request object.
 
         Returns:
-            A list of collection IDs that fall within the tenant's tree.
+            List of all descendant collection IDs.
         """
         ...
 
@@ -500,11 +520,11 @@ class AsyncBaseCatalogsClient(abc.ABC):
 
 
 @attr.s
-class BaseCatalogsClient(abc.ABC):
-    """Defines a synchronous pattern for implementing the STAC catalogs extension.
+class BaseCatalogsSearchClient(abc.ABC):
+    """Defines a synchronous pattern for implementing the Scoped Search extension.
 
-    This is the base class for synchronous catalog client implementations.
-    For async implementations, use AsyncBaseCatalogsClient instead.
+    This is the base class for synchronous catalog search client implementations.
+    For async implementations, use AsyncCatalogsSearchClient instead.
     """
 
     pass

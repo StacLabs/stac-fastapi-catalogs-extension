@@ -17,7 +17,7 @@ from starlette.responses import Response
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
 from typing_extensions import Annotated
 
-from .client import AsyncBaseCatalogsClient
+from .client import AsyncBaseCatalogsClient, AsyncCatalogsSearchClient
 from .types import (
     CatalogChildrenRequest,
     CatalogCollectionItemsRequest,
@@ -509,7 +509,7 @@ class CatalogsSearchExtension(ApiExtension):
     field projection, etc.), ensuring scoped searches are always feature-complete.
 
     Attributes:
-        client: An `AsyncBaseCatalogsClient` instance implementing the search endpoints.
+        client: An `AsyncCatalogsSearchClient` instance implementing the search endpoints.
         search_get_request_model: The dynamic GET request model from core stac-fastapi.
         search_post_request_model: The dynamic POST request model from core stac-fastapi.
         settings: Application settings dictionary.
@@ -518,7 +518,7 @@ class CatalogsSearchExtension(ApiExtension):
         response_class: Response class for the extension.
     """
 
-    client: AsyncBaseCatalogsClient = attr.ib(kw_only=True)
+    client: AsyncCatalogsSearchClient = attr.ib(kw_only=True)
     search_get_request_model: Type[APIRequest] = attr.ib(kw_only=True)
     search_post_request_model: Type[APIRequest] = attr.ib(kw_only=True)
     settings: dict = attr.ib(default=attr.Factory(dict), kw_only=True)

@@ -132,7 +132,7 @@ the AsyncBaseCatalogsClient contract.
   - `CatalogsTransactionExtension`: Write operations (POST, PUT, DELETE) for catalog management
   - `CatalogsSearchExtension`: Scoped search endpoints bounded to a catalog's descendant tree
 - Request/response models for catalogs, children, and search APIs
-- An abstract client contract: `AsyncBaseCatalogsClient` with tree-traversal support
+- Abstract client contracts: `AsyncBaseCatalogsClient` and `AsyncCatalogsSearchClient`
 
 This package wires routes and validation into your API. Your deployment app is
 responsible for providing a concrete client implementation backed by your
@@ -334,9 +334,13 @@ required async methods, including:
 - get_catalog_children
 - get_catalog_conformance
 - get_catalog_queryables
-- get_all_descendant_collections (required for scoped search)
-- catalog_search_get (required for scoped search)
-- catalog_search_post (required for scoped search)
+
+If you are supporting Scoped Search, your client must also subclass
+`AsyncCatalogsSearchClient` and implement:
+
+- `get_all_descendant_collections`
+- `catalog_search_get`
+- `catalog_search_post`
 
 ## Notes for common deployment repos
 
@@ -384,4 +388,17 @@ are available for catalog and collection management:
 - DELETE /catalogs/{catalog_id}/collections/{collection_id}
 - POST /catalogs/{catalog_id}/catalogs
 - DELETE /catalogs/{catalog_id}/catalogs/{sub_catalog_id}
+
+### CatalogsSearchExtension (scoped search)
+
+When CatalogsSearchExtension is enabled, the following additional endpoints
+are available for searching items within a catalog's descendant tree:
+
+- GET /catalogs/{catalog_id}/search
+- POST /catalogs/{catalog_id}/search
+
+These endpoints perform recursive tree traversal to search only items in
+collections linked to the specified catalog and its descendants. They automatically
+inherit any features from the global `/search` endpoint (CQL2 filtering, sorting,
+field projection, etc.).
 

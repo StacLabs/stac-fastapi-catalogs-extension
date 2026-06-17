@@ -8,7 +8,12 @@ from .catalogs import (
     CatalogsSearchExtension,
     CatalogsTransactionExtension,
 )
-from .client import AsyncBaseCatalogsClient, BaseCatalogsClient
+from .client import (
+    AsyncBaseCatalogsClient,
+    AsyncCatalogsSearchClient,
+    BaseCatalogsClient,
+    BaseCatalogsSearchClient,
+)
 from .types import (
     CatalogChildrenRequest,
     CatalogCollectionItemsRequest,
@@ -32,7 +37,9 @@ __all__ = [
     "CatalogsTransactionExtension",
     "CatalogsSearchExtension",
     "AsyncBaseCatalogsClient",
+    "AsyncCatalogsSearchClient",
     "BaseCatalogsClient",
+    "BaseCatalogsSearchClient",
     "Catalogs",
     "Children",
     "ObjectUri",

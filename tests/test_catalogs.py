@@ -21,7 +21,10 @@ from stac_fastapi_catalogs_extension import (
     CatalogsSearchExtension,
     CatalogsTransactionExtension,
 )
-from stac_fastapi_catalogs_extension.client import AsyncBaseCatalogsClient
+from stac_fastapi_catalogs_extension.client import (
+    AsyncBaseCatalogsClient,
+    AsyncCatalogsSearchClient,
+)
 from stac_fastapi_catalogs_extension.types import Catalogs, Children, ObjectUri
 
 
@@ -47,7 +50,7 @@ class DummyCoreClient(BaseCoreClient):
         raise NotImplementedError
 
 
-class DummyCatalogsClient(AsyncBaseCatalogsClient):
+class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
     """Dummy catalogs client for testing."""
 
     async def get_catalogs(
