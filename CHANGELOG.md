@@ -15,9 +15,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Removed
 
-- Removed httpx from dependencies
-
 ### Fixed
+
+## [v0.5.0] - 2026-06-16
+
+### Added
+
+- `CatalogsSearchExtension` class for scoped search endpoints:
+  - `GET /catalogs/{catalog_id}/search` - Query parameter-based scoped search
+  - `POST /catalogs/{catalog_id}/search` - JSON body-based scoped search
+- `get_all_descendant_collections()` abstract method to `AsyncCatalogsSearchClient` for
+  recursive tree traversal (DAG crawl) to support scoped search
+- `catalog_search_get()` and `catalog_search_post()` abstract methods for implementing
+  scoped search in backend clients
+- `AsyncCatalogsSearchClient` and `BaseCatalogsSearchClient` interfaces for optional
+  scoped search support (respects Interface Segregation Principle)
+- `CATALOGS_SEARCH_CONFORMANCE` conformance classes for search endpoints
+- Dynamic request model injection for scoped search (automatically inherits core search features)
+
+### Removed
+
+- Removed httpx from main dependencies (moved to dev dependencies)
+
+### Updated
+
+- Updated the Multi-Tenant Catalogs specification version from rc.1 to rc.2
 
 ## [v0.4.0] - 2026-06-08
 
@@ -105,7 +127,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 	with the Black profile.
 
 
-[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.4.0...main
+[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.5.0...main
+[v0.5.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.2.0...v0.3.0
 [v0.2.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.1.2...v0.2.0

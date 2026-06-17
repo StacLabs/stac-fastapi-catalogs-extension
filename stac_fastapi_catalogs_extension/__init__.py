@@ -2,11 +2,18 @@
 
 from .catalogs import (
     CATALOGS_CORE_CONFORMANCE,
+    CATALOGS_SEARCH_CONFORMANCE,
     CATALOGS_TRANSACTION_CONFORMANCE,
     CatalogsExtension,
+    CatalogsSearchExtension,
     CatalogsTransactionExtension,
 )
-from .client import AsyncBaseCatalogsClient, BaseCatalogsClient
+from .client import (
+    AsyncBaseCatalogsClient,
+    AsyncCatalogsSearchClient,
+    BaseCatalogsClient,
+    BaseCatalogsSearchClient,
+)
 from .types import (
     CatalogChildrenRequest,
     CatalogCollectionItemsRequest,
@@ -28,13 +35,17 @@ from .types import (
 __all__ = [
     "CatalogsExtension",
     "CatalogsTransactionExtension",
+    "CatalogsSearchExtension",
     "AsyncBaseCatalogsClient",
+    "AsyncCatalogsSearchClient",
     "BaseCatalogsClient",
+    "BaseCatalogsSearchClient",
     "Catalogs",
     "Children",
     "ObjectUri",
     "CATALOGS_CORE_CONFORMANCE",
     "CATALOGS_TRANSACTION_CONFORMANCE",
+    "CATALOGS_SEARCH_CONFORMANCE",
     "CatalogsUri",
     "CatalogsGetRequest",
     "CatalogCollectionUri",

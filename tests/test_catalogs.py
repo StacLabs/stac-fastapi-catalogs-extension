@@ -7,6 +7,7 @@ from fastapi import Request
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
+from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -17,9 +18,13 @@ from starlette.testclient import TestClient
 
 from stac_fastapi_catalogs_extension import (
     CatalogsExtension,
+    CatalogsSearchExtension,
     CatalogsTransactionExtension,
 )
-from stac_fastapi_catalogs_extension.client import AsyncBaseCatalogsClient
+from stac_fastapi_catalogs_extension.client import (
+    AsyncBaseCatalogsClient,
+    AsyncCatalogsSearchClient,
+)
 from stac_fastapi_catalogs_extension.types import Catalogs, Children, ObjectUri
 
 
@@ -45,7 +50,7 @@ class DummyCoreClient(BaseCoreClient):
         raise NotImplementedError
 
 
-class DummyCatalogsClient(AsyncBaseCatalogsClient):
+class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
     """Dummy catalogs client for testing."""
 
     async def get_catalogs(
@@ -389,7 +394,7 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient):
         return {
             "conformsTo": [
                 "https://api.stacspec.org/v1.0.0/core",
-                "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs",
+                "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs",
             ]
         }
 
@@ -411,6 +416,68 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient):
         **kwargs,
     ) -> None:
         return None
+
+    async def get_all_descendant_collections(
+        self,
+        catalog_id: str,
+        request: Request | None = None,
+        **kwargs,
+    ) -> list[str]:
+        return ["test-collection", "test-collection-2"]
+
+    async def catalog_search_get(
+        self,
+        catalog_id: str,
+        collections: list[str] | None = None,
+        ids: list[str] | None = None,
+        bbox: list[float] | None = None,
+        intersects: str | None = None,
+        datetime: str | None = None,
+        limit: int | None = None,
+        token: str | None = None,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ItemCollection | Response:
+        return ItemCollection(
+            type="FeatureCollection",
+            features=[
+                Item(
+                    type="Feature",
+                    id="test-item",
+                    geometry={"type": "Point", "coordinates": [0, 0]},
+                    bbox=[0, 0, 0, 0],
+                    datetime="2024-01-01T00:00:00Z",
+                    properties={"datetime": "2024-01-01T00:00:00Z"},
+                    links=[],
+                    assets={},
+                )
+            ],
+            links=[],
+        )
+
+    async def catalog_search_post(
+        self,
+        catalog_id: str,
+        search_request: BaseSearchPostRequest,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ItemCollection | Response:
+        return ItemCollection(
+            type="FeatureCollection",
+            features=[
+                Item(
+                    type="Feature",
+                    id="test-item",
+                    geometry={"type": "Point", "coordinates": [0, 0]},
+                    bbox=[0, 0, 0, 0],
+                    datetime="2024-01-01T00:00:00Z",
+                    properties={"datetime": "2024-01-01T00:00:00Z"},
+                    links=[],
+                    assets={},
+                )
+            ],
+            links=[],
+        )
 
 
 @pytest.fixture
@@ -891,7 +958,7 @@ def test_readonly_conformance_excludes_transaction_class(
     data = response.json()
     assert "conformsTo" in data
     transaction_class = (
-        "https://api.stacspec.org/v1.0.0-beta.4/multi-tenant-catalogs/transaction"
+        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction"
     )
     assert transaction_class not in data["conformsTo"]
 
@@ -903,7 +970,7 @@ def test_enabled_conformance_includes_transaction_class(client: TestClient) -> N
     data = response.json()
     assert "conformsTo" in data
     transaction_class = (
-        "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction"
+        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction"
     )
     assert transaction_class in data["conformsTo"]
 
@@ -941,3 +1008,140 @@ def test_hide_alternate_parents_flag_default() -> None:
     )
     assert hasattr(api.app.state, "catalogs_hide_alternate_parents")
     assert api.app.state.catalogs_hide_alternate_parents is False
+
+
+def test_search_extension_registered() -> None:
+    """Test that CatalogsSearchExtension is properly registered."""
+    settings = ApiSettings()
+    api = StacApi(
+        settings=settings,
+        client=DummyCoreClient(),
+        extensions=[
+            CatalogsExtension(
+                client=DummyCatalogsClient(),
+                settings=settings.model_dump(),
+            ),
+            CatalogsSearchExtension(
+                client=DummyCatalogsClient(),
+                search_get_request_model=BaseSearchGetRequest,
+                search_post_request_model=BaseSearchPostRequest,
+                settings=settings.model_dump(),
+            ),
+        ],
+    )
+    assert hasattr(api.app.state, "catalogs_conformance_classes")
+    assert (
+        "https://api.stacspec.org/v1.0.0/item-search"
+        in api.app.state.catalogs_conformance_classes
+    )
+    assert (
+        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search"
+        in api.app.state.catalogs_conformance_classes
+    )
+
+
+def test_catalog_search_get(
+    core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
+) -> None:
+    """Test GET /catalogs/{catalog_id}/search endpoint."""
+    settings = ApiSettings()
+    api = StacApi(
+        settings=settings,
+        client=core_client,
+        extensions=[
+            CatalogsExtension(
+                client=catalogs_client,
+                settings=settings.model_dump(),
+            ),
+            CatalogsSearchExtension(
+                client=catalogs_client,
+                search_get_request_model=BaseSearchGetRequest,
+                search_post_request_model=BaseSearchPostRequest,
+                settings=settings.model_dump(),
+            ),
+        ],
+    )
+    with TestClient(api.app) as test_client:
+        response = test_client.get("/catalogs/test-catalog-1/search?limit=10")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["type"] == "FeatureCollection"
+        assert len(data["features"]) == 1
+        assert data["features"][0]["id"] == "test-item"
+
+
+def test_catalog_search_get_with_filters(
+    core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
+) -> None:
+    """Test GET /catalogs/{catalog_id}/search with query parameters."""
+    settings = ApiSettings()
+    api = StacApi(
+        settings=settings,
+        client=core_client,
+        extensions=[
+            CatalogsExtension(
+                client=catalogs_client,
+                settings=settings.model_dump(),
+            ),
+            CatalogsSearchExtension(
+                client=catalogs_client,
+                search_get_request_model=BaseSearchGetRequest,
+                search_post_request_model=BaseSearchPostRequest,
+                settings=settings.model_dump(),
+            ),
+        ],
+    )
+    with TestClient(api.app) as test_client:
+        response = test_client.get(
+            "/catalogs/test-catalog-1/search?"
+            "collections=test-collection&"
+            "ids=test-item&"
+            "limit=5"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["type"] == "FeatureCollection"
+
+
+def test_catalog_search_post(
+    core_client: DummyCoreClient, catalogs_client: DummyCatalogsClient
+) -> None:
+    """Test POST /catalogs/{catalog_id}/search endpoint."""
+    settings = ApiSettings()
+    api = StacApi(
+        settings=settings,
+        client=core_client,
+        extensions=[
+            CatalogsExtension(
+                client=catalogs_client,
+                settings=settings.model_dump(),
+            ),
+            CatalogsSearchExtension(
+                client=catalogs_client,
+                search_get_request_model=BaseSearchGetRequest,
+                search_post_request_model=BaseSearchPostRequest,
+                settings=settings.model_dump(),
+            ),
+        ],
+    )
+    with TestClient(api.app) as test_client:
+        search_request = {
+            "collections": ["test-collection"],
+            "limit": 10,
+        }
+        response = test_client.post(
+            "/catalogs/test-catalog-1/search", json=search_request
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["type"] == "FeatureCollection"
+        assert len(data["features"]) == 1
+        assert data["features"][0]["id"] == "test-item"
+
+
+def test_get_all_descendant_collections() -> None:
+    """Test that get_all_descendant_collections is implemented."""
+    catalogs_client = DummyCatalogsClient()
+    # Verify the method exists and is callable
+    assert hasattr(catalogs_client, "get_all_descendant_collections")
+    assert callable(catalogs_client.get_all_descendant_collections)

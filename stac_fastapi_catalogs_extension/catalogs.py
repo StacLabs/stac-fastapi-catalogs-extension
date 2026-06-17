@@ -3,10 +3,11 @@
 from typing import Type
 
 import attr
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, Body, FastAPI, Path
 from fastapi.responses import JSONResponse
 from stac_fastapi.api.routes import create_async_endpoint
 from stac_fastapi.types.extension import ApiExtension
+from stac_fastapi.types.search import APIRequest
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -14,8 +15,9 @@ from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
 from starlette.responses import Response
 from starlette.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_204_NO_CONTENT
+from typing_extensions import Annotated
 
-from .client import AsyncBaseCatalogsClient
+from .client import AsyncBaseCatalogsClient, AsyncCatalogsSearchClient
 from .types import (
     CatalogChildrenRequest,
     CatalogCollectionItemsRequest,
@@ -38,13 +40,18 @@ from .types import (
 # Conformance Classes
 CATALOGS_CORE_CONFORMANCE = [
     "https://api.stacspec.org/v1.0.0/core",
-    "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs",
+    "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs",
     "https://api.stacspec.org/v1.0.0-rc.2/children",
     "https://api.stacspec.org/v1.0.0-rc.2/children#type-filter",
 ]
 
 CATALOGS_TRANSACTION_CONFORMANCE = [
-    "https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction"
+    "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction"
+]
+
+CATALOGS_SEARCH_CONFORMANCE = [
+    "https://api.stacspec.org/v1.0.0/item-search",
+    "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search",
 ]
 
 
@@ -488,3 +495,101 @@ class CatalogsTransactionExtension(ApiExtension):
         )
 
         app.include_router(self.router, tags=["Catalogs"])
+
+
+@attr.s
+class CatalogsSearchExtension(ApiExtension):
+    """Catalogs Search Extension (Recursive Scoped Search).
+
+    This extension provides the `GET` and `POST` search endpoints for performing
+    STAC item searches strictly bounded to a catalog's descendant tree.
+
+    By injecting the dynamic core search request models, this extension automatically
+    inherits any features added to the global `/search` endpoint (CQL2, sorting,
+    field projection, etc.), ensuring scoped searches are always feature-complete.
+
+    Attributes:
+        client: An `AsyncCatalogsSearchClient` instance implementing the search endpoints.
+        search_get_request_model: The dynamic GET request model from core stac-fastapi.
+        search_post_request_model: The dynamic POST request model from core stac-fastapi.
+        settings: Application settings dictionary.
+        conformance_classes: List of search conformance classes for this extension.
+        router: FastAPI router for the extension endpoints.
+        response_class: Response class for the extension.
+    """
+
+    client: AsyncCatalogsSearchClient = attr.ib(kw_only=True)
+    search_get_request_model: Type[APIRequest] = attr.ib(kw_only=True)
+    search_post_request_model: Type[APIRequest] = attr.ib(kw_only=True)
+    settings: dict = attr.ib(default=attr.Factory(dict), kw_only=True)
+    conformance_classes: list[str] = attr.ib(
+        default=attr.Factory(lambda: CATALOGS_SEARCH_CONFORMANCE.copy()), kw_only=True
+    )
+    router: APIRouter = attr.ib(factory=APIRouter, kw_only=True)
+    response_class: Type[Response] = attr.ib(default=JSONResponse, kw_only=True)
+
+    def register(self, app: FastAPI) -> None:
+        """Register the search extension with a FastAPI application."""
+        self.router.prefix = app.state.router_prefix
+
+        # Inject search conformance into the shared catalog state
+        if not hasattr(app.state, "catalogs_conformance_classes"):
+            app.state.catalogs_conformance_classes = set()
+        app.state.catalogs_conformance_classes.update(self.conformance_classes)
+
+        # Dynamically create request models that inherit both the core STAC search
+        # parameters AND the catalog_id path parameter. This ensures scoped searches
+        # automatically inherit any features added to the global /search endpoint.
+        get_request_model: Type[APIRequest] = self.search_get_request_model
+        post_request_model: Type[APIRequest] = self.search_post_request_model
+
+        @attr.s
+        class CatalogSearchGetRequest(get_request_model):  # type: ignore
+            catalog_id: Annotated[str, Path(description="Catalog ID")] = attr.ib(
+                kw_only=True
+            )
+
+        @attr.s
+        class CatalogSearchPostRequest(APIRequest):
+            catalog_id: Annotated[str, Path(description="Catalog ID")] = attr.ib(
+                kw_only=True
+            )
+            search_request: Annotated[post_request_model, Body(...)] = attr.ib(  # type: ignore
+                kw_only=True
+            )
+
+        # GET /catalogs/{catalog_id}/search
+        self.router.add_api_route(
+            name="Catalog Scoped Search (GET)",
+            path="/catalogs/{catalog_id}/search",
+            methods=["GET"],
+            endpoint=create_async_endpoint(
+                self.client.catalog_search_get, CatalogSearchGetRequest
+            ),
+            response_model=ItemCollection
+            if self.settings.get("enable_response_models", True)
+            else None,
+            response_class=self.response_class,
+            summary="Catalog Scoped Search",
+            description="Search items in a catalog's descendant tree using query parameters.",
+            tags=["Catalogs Search"],
+        )
+
+        # POST /catalogs/{catalog_id}/search
+        self.router.add_api_route(
+            name="Catalog Scoped Search (POST)",
+            path="/catalogs/{catalog_id}/search",
+            methods=["POST"],
+            endpoint=create_async_endpoint(
+                self.client.catalog_search_post, CatalogSearchPostRequest
+            ),
+            response_model=ItemCollection
+            if self.settings.get("enable_response_models", True)
+            else None,
+            response_class=self.response_class,
+            summary="Catalog Scoped Search",
+            description="Search items in a catalog's descendant tree using a JSON payload.",
+            tags=["Catalogs Search"],
+        )
+
+        app.include_router(self.router, tags=["Catalogs Search"])

@@ -14,6 +14,7 @@ from typing import Literal
 
 import attr
 from fastapi import Request
+from stac_fastapi.types.search import BaseSearchPostRequest
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -420,6 +421,108 @@ class BaseCatalogsClient(abc.ABC):
 
     This is the base class for synchronous catalog client implementations.
     For async implementations, use AsyncBaseCatalogsClient instead.
+    """
+
+    pass
+
+
+class AsyncCatalogsSearchClient(abc.ABC):
+    """Defines an async pattern for implementing the Scoped Search extension.
+
+    This is an optional interface for backends that support scoped search.
+    Implement this interface alongside AsyncBaseCatalogsClient to enable
+    the CatalogsSearchExtension.
+
+    This separation respects the Interface Segregation Principle: backends
+    that only need basic discovery endpoints don't need to implement search.
+    """
+
+    @abc.abstractmethod
+    async def get_all_descendant_collections(
+        self,
+        catalog_id: str,
+        request: Request | None = None,
+        **kwargs,
+    ) -> list[str]:
+        """Return all descendant collection IDs for a catalog recursively.
+
+        This method performs a depth-first traversal of the catalog's descendant
+        tree to collect all collection IDs. It is used by scoped search to determine
+        which collections should be included in the search.
+
+        Args:
+            catalog_id: The ID of the catalog to traverse.
+            request: Optional FastAPI request object.
+
+        Returns:
+            List of all descendant collection IDs.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def catalog_search_get(
+        self,
+        catalog_id: str,
+        collections: list[str] | None = None,
+        ids: list[str] | None = None,
+        bbox: list[float] | None = None,
+        intersects: str | None = None,
+        datetime: str | None = None,
+        limit: int | None = None,
+        token: str | None = None,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ItemCollection | Response:
+        """Search items in a catalog's descendant tree using query parameters.
+
+        This endpoint performs a scoped search bounded to the specified catalog
+        and its descendants, supporting recursive tree traversal.
+
+        Args:
+            catalog_id: The ID of the catalog to search within.
+            collections: Array of collection IDs to search.
+            ids: Array of item IDs to search for.
+            bbox: Bounding box to filter items [minx, miny, maxx, maxy].
+            intersects: GeoJSON geometry for spatial filtering.
+            datetime: Datetime to filter items.
+            limit: Maximum number of items to return.
+            token: Pagination token.
+            request: Optional FastAPI request object.
+
+        Returns:
+            ItemCollection containing matching items.
+        """
+        ...
+
+    @abc.abstractmethod
+    async def catalog_search_post(
+        self,
+        catalog_id: str,
+        search_request: BaseSearchPostRequest,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ItemCollection | Response:
+        """Search items in a catalog's descendant tree using a JSON payload.
+
+        This endpoint performs a scoped search bounded to the specified catalog
+        and its descendants, supporting recursive tree traversal.
+
+        Args:
+            catalog_id: The ID of the catalog to search within.
+            search_request: Search request body (BaseSearchPostRequest).
+            request: Optional FastAPI request object.
+
+        Returns:
+            ItemCollection containing matching items.
+        """
+        ...
+
+
+class BaseCatalogsSearchClient(abc.ABC):
+    """Defines a synchronous pattern for implementing the Scoped Search extension.
+
+    This is the base class for synchronous catalog search client implementations.
+    For async implementations, use AsyncCatalogsSearchClient instead.
     """
 
     pass

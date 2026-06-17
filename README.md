@@ -32,7 +32,7 @@ links.
 | Project | Status | Notes |
 | --- | --- | --- |
 | [stac-fastapi-elasticsearch-opensearch (SFEOS)](https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch) | Implemented | Active integration target for this extension |
-| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Not implemented yet | In Progress: https://github.com/stac-utils/stac-fastapi-pgstac/pull/366 |
+| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Implemented | Active integration target for this extension |
 | [stac-fastapi-mongo](https://github.com/stac-utils/stac-fastapi-mongo) | Not implemented yet | Planned |
 
 _Last verified: 2026-03-22_
@@ -71,11 +71,14 @@ according to your enabled capabilities:
 
 - Required:
 	- https://api.stacspec.org/v1.0.0/core
-	- https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs
+	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs
 - Recommended:
 	- https://api.stacspec.org/v1.0.0-rc.2/children
 - Optional (only if transaction endpoints are enabled):
-	- https://api.stacspec.org/v1.0.0-rc.1/multi-tenant-catalogs/transaction
+	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction
+- Optional (only if scoped search endpoints are enabled):
+	- https://api.stacspec.org/v1.0.0/item-search
+	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search
 
 Operational guidance:
 
@@ -113,10 +116,10 @@ This extension is designed for STAC FastAPI deployment applications and is
 currently supported in:
 
 - SFEOS: https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch
+- stac-fastapi-pgstac: https://github.com/stac-utils/stac-fastapi-pgstac
 
 Planned (not yet implemented):
 
-- stac-fastapi-pgstac: https://github.com/stac-utils/stac-fastapi-pgstac
 - stac-fastapi-mongo: https://github.com/stac-utils/stac-fastapi-mongo
 
 It can also be integrated into custom STAC FastAPI deployments that implement
@@ -124,11 +127,12 @@ the AsyncBaseCatalogsClient contract.
 
 ## What this package provides
 
-- Two STAC FastAPI extension classes:
+- Three STAC FastAPI extension classes:
   - `CatalogsExtension`: Read-only discovery endpoints for catalogs
   - `CatalogsTransactionExtension`: Write operations (POST, PUT, DELETE) for catalog management
-- Request/response models for catalogs and children APIs
-- An abstract client contract: AsyncBaseCatalogsClient
+  - `CatalogsSearchExtension`: Scoped search endpoints bounded to a catalog's descendant tree
+- Request/response models for catalogs, children, and search APIs
+- Abstract client contracts: `AsyncBaseCatalogsClient` and `AsyncCatalogsSearchClient`
 
 This package wires routes and validation into your API. Your deployment app is
 responsible for providing a concrete client implementation backed by your
@@ -144,8 +148,8 @@ pip install stac-fastapi-catalogs-extension
 
 In your deployment app.py (for example in
 stac-fastapi-elasticsearch-opensearch), instantiate StacApi with
-CatalogsExtension and optionally CatalogsTransactionExtension, passing an
-implementation of AsyncBaseCatalogsClient.
+`CatalogsExtension` and optionally `CatalogsTransactionExtension` and/or
+`CatalogsSearchExtension`, passing an implementation of `AsyncBaseCatalogsClient`.
 
 ### Read-only deployment (discovery only)
 
@@ -221,6 +225,92 @@ app = api.app
 The transaction conformance class is automatically registered when
 `CatalogsTransactionExtension` is included.
 
+### With scoped search support
+
+```python
+from stac_fastapi.api.app import StacApi
+from stac_fastapi.types.config import ApiSettings
+from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest
+
+from stac_fastapi_catalogs_extension import (
+    CatalogsExtension,
+    CatalogsSearchExtension,
+    CATALOGS_SEARCH_CONFORMANCE,
+)
+from my_project.catalogs_client import CatalogsClient
+from my_project.core_client import CoreClient
+
+
+settings = ApiSettings()
+
+core_client = CoreClient(...)
+catalogs_client = CatalogsClient(...)
+
+# In a real deployment, these models are generated dynamically by 
+# your search extensions (e.g., FilterExtension, SortExtension).
+# We pass them to CatalogsSearchExtension so scoped searches inherit them!
+get_request_model = BaseSearchGetRequest
+post_request_model = BaseSearchPostRequest
+
+api = StacApi(
+    settings=settings,
+    client=core_client,
+    extensions=[
+        CatalogsExtension(
+            client=catalogs_client,
+            settings=settings.model_dump(),
+        ),
+        CatalogsSearchExtension(
+            client=catalogs_client,
+            search_get_request_model=get_request_model,
+            search_post_request_model=post_request_model,
+            conformance_classes=list(CATALOGS_SEARCH_CONFORMANCE),
+            settings=settings.model_dump(),
+        ),
+    ],
+)
+
+app = api.app
+```
+
+The search conformance classes are automatically registered when
+`CatalogsSearchExtension` is included. This enables scoped search via:
+- `GET /catalogs/{catalog_id}/search` - Query parameter-based search
+- `POST /catalogs/{catalog_id}/search` - JSON body-based search
+
+Both endpoints perform recursive tree traversal to search only items in
+collections linked to the specified catalog and its descendants.
+
+**Key architectural benefit**: By injecting the dynamic core search request models,
+the scoped search endpoints automatically inherit any features added to the global
+`/search` endpoint (CQL2 filtering, sorting, field projection, etc.), ensuring
+scoped searches are always feature-complete!
+
+### Inheriting Core Search Extensions (Filter, Sort, Fields)
+
+If your core STAC API utilizes extensions that modify the global `/search` endpoint
+(such as the `FilterExtension` for CQL2, `SortExtension`, or `FieldsExtension`),
+the scoped search endpoints can automatically inherit these exact same capabilities.
+
+By passing the dynamically generated request models from your core API setup into
+the `CatalogsSearchExtension`, you guarantee that multi-tenant users have access
+to the same advanced querying features inside their sub-catalogs:
+
+```python
+# Generate models using your core stac-fastapi extensions
+get_request_model = create_get_request_model(core_extensions)
+post_request_model = create_post_request_model(core_extensions)
+
+CatalogsSearchExtension(
+    search_get_request_model=get_request_model,
+    search_post_request_model=post_request_model,
+    # ...
+)
+```
+
+This makes it crystal clear that the scoped search isn't a "second-class citizen"
+endpoint—it is functionally identical to the main search!
+
 ## Backend client requirements
 
 Your CatalogsClient should subclass AsyncBaseCatalogsClient and implement the
@@ -245,6 +335,13 @@ required async methods, including:
 - get_catalog_conformance
 - get_catalog_queryables
 
+If you are supporting Scoped Search, your client must also subclass
+`AsyncCatalogsSearchClient` and implement:
+
+- `get_all_descendant_collections`
+- `catalog_search_get`
+- `catalog_search_post`
+
 ## Notes for common deployment repos
 
 ### stac-fastapi-elasticsearch-opensearch style deployment
@@ -254,7 +351,7 @@ required async methods, including:
 - Reuse your existing core client for global /collections and /search routes.
 - Add CatalogsExtension to the extensions list in app.py as shown above.
 
-### stac-fastapi-pgstac style deployment (planned)
+### stac-fastapi-pgstac style deployment
 
 - Build a catalogs client that maps these methods to SQL functions or pgstac
   tables/views that represent catalog hierarchy and scoped membership.
@@ -291,4 +388,17 @@ are available for catalog and collection management:
 - DELETE /catalogs/{catalog_id}/collections/{collection_id}
 - POST /catalogs/{catalog_id}/catalogs
 - DELETE /catalogs/{catalog_id}/catalogs/{sub_catalog_id}
+
+### CatalogsSearchExtension (scoped search)
+
+When CatalogsSearchExtension is enabled, the following additional endpoints
+are available for searching items within a catalog's descendant tree:
+
+- GET /catalogs/{catalog_id}/search
+- POST /catalogs/{catalog_id}/search
+
+These endpoints perform recursive tree traversal to search only items in
+collections linked to the specified catalog and its descendants. They automatically
+inherit any features from the global `/search` endpoint (CQL2 filtering, sorting,
+field projection, etc.).
 
