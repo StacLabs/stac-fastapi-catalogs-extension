@@ -46,6 +46,7 @@ _Last verified: 2026-03-22_
 - [Supported projects](#supported-projects)
 - [Install](#install)
 - [Integrate in a STAC FastAPI deployment](#integrate-in-a-stac-fastapi-deployment)
+- [Customizing listing request models](#customizing-listing-request-models)
 - [Backend client requirements](#backend-client-requirements)
 - [Notes for common deployment repos](#notes-for-common-deployment-repos)
 - [Endpoints added by this extension](#endpoints-added-by-this-extension)
@@ -310,6 +311,52 @@ CatalogsSearchExtension(
 
 This makes it crystal clear that the scoped search isn't a "second-class citizen"
 endpoint—it is functionally identical to the main search!
+
+## Customizing listing request models
+
+Each listing route on `CatalogsExtension` takes its request model from an attribute,
+defaulting to the model the route used before:
+
+| Route | Attribute | Default |
+|---|---|---|
+| `GET /catalogs` | `catalogs_get_request_model` | `CatalogsGetRequest` |
+| `GET /catalogs/{catalog_id}/collections` | `catalog_collections_get_request_model` | `CatalogCollectionsRequest` |
+| `GET /catalogs/{catalog_id}/collections/{collection_id}/items` | `catalog_collection_items_get_request_model` | `CatalogCollectionItemsRequest` |
+| `GET /catalogs/{catalog_id}/catalogs` | `sub_catalogs_get_request_model` | `SubCatalogsRequest` |
+| `GET /catalogs/{catalog_id}/children` | `catalog_children_get_request_model` | `CatalogChildrenRequest` |
+
+Override one to add query parameters to a route. The catalog collections route is a
+collection listing, so the STAC API Collection Search parameters (`fields`, `sortby`,
+`q`, `filter`) apply to it. Compose them onto the default model with
+`create_request_model`:
+
+```python
+from stac_fastapi.api.models import create_request_model
+
+from stac_fastapi_catalogs_extension import (
+    CatalogCollectionsRequest,
+    CatalogsExtension,
+)
+
+catalog_collections_model = create_request_model(
+    model_name="CatalogCollectionsGetRequest",
+    base_model=CatalogCollectionsRequest,
+    extensions=[fields_extension, sort_extension, filter_extension, free_text_extension],
+    request_type="GET",
+)
+
+CatalogsExtension(
+    client=catalogs_client,
+    catalog_collections_get_request_model=catalog_collections_model,
+)
+```
+
+FastAPI binds and validates the parameters, and they reach your client method
+through `**kwargs`. Passing the same extension list to `StacApi` gives
+`GET /collections` and `GET /catalogs/{catalog_id}/collections` matching parameters.
+
+Advertising the conformance classes for a composed model is the deployment's
+responsibility, as it already is on `StacApi`.
 
 ## Backend client requirements
 

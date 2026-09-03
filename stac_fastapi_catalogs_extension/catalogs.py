@@ -80,6 +80,20 @@ class CatalogsExtension(ApiExtension):
         hide_alternate_parents: If True, do not advertise rel="related" links to
             alternative parents in poly-hierarchy. Useful for multi-tenant deployments
             to prevent information leakage about other tenants.
+        catalogs_get_request_model: Request model for GET /catalogs.
+        catalog_collections_get_request_model: Request model for
+            GET /catalogs/{catalog_id}/collections.
+        catalog_collection_items_get_request_model: Request model for
+            GET /catalogs/{catalog_id}/collections/{collection_id}/items.
+        sub_catalogs_get_request_model: Request model for
+            GET /catalogs/{catalog_id}/catalogs.
+        catalog_children_get_request_model: Request model for
+            GET /catalogs/{catalog_id}/children.
+
+    Each request model defaults to the class the route used before. Override one
+    to widen a listing route, for example by composing the collection search
+    parameters onto the catalog collections route with
+    `stac_fastapi.api.models.create_request_model`.
     """
 
     client: AsyncBaseCatalogsClient = attr.ib(kw_only=True)
@@ -90,6 +104,21 @@ class CatalogsExtension(ApiExtension):
     router: APIRouter = attr.ib(factory=APIRouter, kw_only=True)
     response_class: Type[Response] = attr.ib(default=JSONResponse, kw_only=True)
     hide_alternate_parents: bool = attr.ib(default=False, kw_only=True)
+    catalogs_get_request_model: Type[APIRequest] = attr.ib(
+        default=CatalogsGetRequest, kw_only=True
+    )
+    catalog_collections_get_request_model: Type[APIRequest] = attr.ib(
+        default=CatalogCollectionsRequest, kw_only=True
+    )
+    catalog_collection_items_get_request_model: Type[APIRequest] = attr.ib(
+        default=CatalogCollectionItemsRequest, kw_only=True
+    )
+    sub_catalogs_get_request_model: Type[APIRequest] = attr.ib(
+        default=SubCatalogsRequest, kw_only=True
+    )
+    catalog_children_get_request_model: Type[APIRequest] = attr.ib(
+        default=CatalogChildrenRequest, kw_only=True
+    )
 
     def register(self, app: FastAPI) -> None:
         """Register the extension with a FastAPI application.
@@ -113,7 +142,7 @@ class CatalogsExtension(ApiExtension):
             path="/catalogs",
             methods=["GET"],
             endpoint=create_async_endpoint(
-                self.client.get_catalogs, CatalogsGetRequest
+                self.client.get_catalogs, self.catalogs_get_request_model
             ),
             response_model=Catalogs
             if self.settings.get("enable_response_models", True)
@@ -145,7 +174,8 @@ class CatalogsExtension(ApiExtension):
             path="/catalogs/{catalog_id}/collections",
             methods=["GET"],
             endpoint=create_async_endpoint(
-                self.client.get_catalog_collections, CatalogCollectionsRequest
+                self.client.get_catalog_collections,
+                self.catalog_collections_get_request_model,
             ),
             response_model=Collections
             if self.settings.get("enable_response_models", True)
@@ -179,7 +209,8 @@ class CatalogsExtension(ApiExtension):
             path="/catalogs/{catalog_id}/collections/{collection_id}/items",
             methods=["GET"],
             endpoint=create_async_endpoint(
-                self.client.get_catalog_collection_items, CatalogCollectionItemsRequest
+                self.client.get_catalog_collection_items,
+                self.catalog_collection_items_get_request_model,
             ),
             response_model=ItemCollection
             if self.settings.get("enable_response_models", True)
@@ -213,7 +244,7 @@ class CatalogsExtension(ApiExtension):
             path="/catalogs/{catalog_id}/catalogs",
             methods=["GET"],
             endpoint=create_async_endpoint(
-                self.client.get_sub_catalogs, SubCatalogsRequest
+                self.client.get_sub_catalogs, self.sub_catalogs_get_request_model
             ),
             response_model=Catalogs
             if self.settings.get("enable_response_models", True)
@@ -230,7 +261,8 @@ class CatalogsExtension(ApiExtension):
             path="/catalogs/{catalog_id}/children",
             methods=["GET"],
             endpoint=create_async_endpoint(
-                self.client.get_catalog_children, CatalogChildrenRequest
+                self.client.get_catalog_children,
+                self.catalog_children_get_request_model,
             ),
             response_model=Children
             if self.settings.get("enable_response_models", True)
