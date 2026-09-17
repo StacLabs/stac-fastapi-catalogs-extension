@@ -32,10 +32,10 @@ links.
 | Project | Status | Notes |
 | --- | --- | --- |
 | [stac-fastapi-elasticsearch-opensearch (SFEOS)](https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch) | Implemented | Active integration target for this extension |
-| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Implemented | Active integration target for this extension |
+| [stac-fastapi-pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) | Partially implemented | Catalogs and transaction endpoints implemented; scoped search (`AsyncCatalogsSearchClient`) not yet implemented |
 | [stac-fastapi-mongo](https://github.com/stac-utils/stac-fastapi-mongo) | Not implemented yet | Planned |
 
-_Last verified: 2026-03-22_
+_Last verified: 2026-09-17_
 
 ## Table of contents
 
@@ -72,14 +72,15 @@ according to your enabled capabilities:
 
 - Required:
 	- https://api.stacspec.org/v1.0.0/core
-	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs
+	- https://api.stacspec.org/v1.0.0/multi-tenant-catalogs
 - Recommended:
-	- https://api.stacspec.org/v1.0.0-rc.2/children
+	- https://api.stacspec.org/v1.0.0/children
+	- https://api.stacspec.org/v1.0.0/children#type-filter (required if implementing `?type` filtering on the children endpoint)
 - Optional (only if transaction endpoints are enabled):
-	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction
+	- https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/transaction
 - Optional (only if scoped search endpoints are enabled):
 	- https://api.stacspec.org/v1.0.0/item-search
-	- https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search
+	- https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/search
 
 Operational guidance:
 
@@ -118,6 +119,7 @@ currently supported in:
 
 - SFEOS: https://github.com/stac-utils/stac-fastapi-elasticsearch-opensearch
 - stac-fastapi-pgstac: https://github.com/stac-utils/stac-fastapi-pgstac
+  (scoped search via `AsyncCatalogsSearchClient` not yet implemented)
 
 Planned (not yet implemented):
 
@@ -381,6 +383,12 @@ required async methods, including:
 - get_catalog_children
 - get_catalog_conformance
 - get_catalog_queryables
+
+Note: per STAC API - Children v1.0.0, the `get_catalog_children` response
+`links` array MUST include `root`, `parent`, and `self` link relations, and
+each entity in `children` MUST include a `self` link to its canonical location.
+The `Children` response model validates these requirements and will raise an
+error if they are missing.
 
 If you are supporting Scoped Search, your client must also subclass
 `AsyncCatalogsSearchClient` and implement:

@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+### Updated
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [v1.0.0] - 2026-09-17
+
+### Added
+
 - Injectable request models on `CatalogsExtension`, so a deployment can add query
   parameters to a catalog-scoped listing. Each listing route reads its model from an
   attribute (`catalogs_get_request_model`, `catalog_collections_get_request_model`,
@@ -20,13 +32,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Exported `CatalogCollectionsRequest` and `UpdateCatalogCollectionRequest` from the
   package root.
 
-### Updated
-
 ### Changed
 
-### Removed
+- Updated conformance class URIs to v1.0.0 following the Multi-Tenant Catalogs
+  and Children extension releases:
+  - https://api.stacspec.org/v1.0.0/multi-tenant-catalogs
+  - https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/transaction
+  - https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/search
+  - https://api.stacspec.org/v1.0.0/children
+  - https://api.stacspec.org/v1.0.0/children#type-filter
+
+### Breaking
+
+- The `Children` response model now enforces STAC API - Children v1.0.0 link
+  requirements: the response `links` array must include `root`, `parent`, and
+  `self` relations, and each entity in `children` must include a `self` link.
+  Backends constructing `Children` responses without these links will now get a
+  validation error.
 
 ### Fixed
+
+- Corrected the README implementation status table: stac-fastapi-pgstac
+  implements the catalogs and transaction endpoints but does not yet implement
+  scoped search (`AsyncCatalogsSearchClient`). [#19](https://github.com/StacLabs/stac-fastapi-catalogs-extension/issues/19)
+- Pinned `pydantic>=2.4.1` to match the v2-only `model_validator` usage in
+  `types.py` and the floor already required by `stac-pydantic`.
 
 ## [v0.5.0] - 2026-06-16
 
@@ -138,7 +168,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 	with the Black profile.
 
 
-[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.5.0...main
+[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v1.0.0...main
+[v1.0.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.5.0...v1.0.0
 [v0.5.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.2.0...v0.3.0

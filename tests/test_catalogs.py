@@ -5,6 +5,7 @@ from datetime import datetime
 import attr
 import pytest
 from fastapi import Query, Request
+from pydantic import ValidationError
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
@@ -351,13 +352,21 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
         request: Request | None = None,
         **kwargs,
     ) -> Children | Response:
+        base_url = "http://testserver"
         all_children = [
             Catalog(
                 id=f"{catalog_id}-child-1",
                 type="Catalog",
                 description="Child catalog",
                 stac_version="1.0.0",
-                links=[],
+                links=[
+                    {
+                        "rel": "self",
+                        "href": f"{base_url}/catalogs/{catalog_id}-child-1",
+                    },
+                    {"rel": "root", "href": f"{base_url}/"},
+                    {"rel": "parent", "href": f"{base_url}/catalogs/{catalog_id}"},
+                ],
             ),
             Collection(
                 id="collection-1",
@@ -369,7 +378,17 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
                     "spatial": {"bbox": [[-180, -90, 180, 90]]},
                     "temporal": {"interval": [[None, None]]},
                 },
-                links=[],
+                links=[
+                    {
+                        "rel": "self",
+                        "href": (
+                            f"{base_url}/catalogs/{catalog_id}"
+                            "/collections/collection-1"
+                        ),
+                    },
+                    {"rel": "root", "href": f"{base_url}/"},
+                    {"rel": "parent", "href": f"{base_url}/catalogs/{catalog_id}"},
+                ],
             ),
         ]
 
@@ -390,7 +409,14 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
 
         return Children(
             children=filtered_children,
-            links=[],
+            links=[
+                {
+                    "rel": "self",
+                    "href": f"{base_url}/catalogs/{catalog_id}/children",
+                },
+                {"rel": "root", "href": f"{base_url}/"},
+                {"rel": "parent", "href": f"{base_url}/catalogs/{catalog_id}"},
+            ],
             numberMatched=len(filtered_children),
             numberReturned=len(filtered_children),
         )
@@ -401,7 +427,7 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
         return {
             "conformsTo": [
                 "https://api.stacspec.org/v1.0.0/core",
-                "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs",
+                "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs",
             ]
         }
 
@@ -803,6 +829,49 @@ def test_get_catalog_children(client: TestClient) -> None:
     assert data["numberMatched"] == 2
 
 
+def test_get_catalog_children_required_links(client: TestClient) -> None:
+    """Test children response includes links required by Children v1.0.0."""
+    response = client.get("/catalogs/test-catalog-1/children")
+    assert response.status_code == 200, response.text
+    data = response.json()
+
+    # Response links MUST include root, parent, and self
+    response_rels = {link["rel"] for link in data["links"]}
+    assert {"root", "parent", "self"} <= response_rels
+
+    # Each entity in children MUST include a self link
+    for child in data["children"]:
+        child_rels = {link["rel"] for link in child["links"]}
+        assert "self" in child_rels
+
+
+def test_children_model_requires_links() -> None:
+    """Test Children model enforces required link relations."""
+    with pytest.raises(ValidationError, match="missing required"):
+        Children(
+            children=[],
+            links=[{"rel": "self", "href": "http://testserver/children"}],
+        )
+
+    with pytest.raises(ValidationError, match="rel='self'"):
+        Children(
+            children=[
+                Catalog(
+                    id="child-1",
+                    type="Catalog",
+                    description="Child catalog",
+                    stac_version="1.0.0",
+                    links=[],
+                )
+            ],
+            links=[
+                {"rel": "self", "href": "http://testserver/children"},
+                {"rel": "root", "href": "http://testserver/"},
+                {"rel": "parent", "href": "http://testserver/"},
+            ],
+        )
+
+
 def test_get_catalog_children_with_type_filter(client: TestClient) -> None:
     """Test GET /catalogs/{catalog_id}/children with type filter."""
     response = client.get("/catalogs/test-catalog-1/children?type=Catalog")
@@ -965,7 +1034,7 @@ def test_readonly_conformance_excludes_transaction_class(
     data = response.json()
     assert "conformsTo" in data
     transaction_class = (
-        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction"
+        "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/transaction"
     )
     assert transaction_class not in data["conformsTo"]
 
@@ -977,7 +1046,7 @@ def test_enabled_conformance_includes_transaction_class(client: TestClient) -> N
     data = response.json()
     assert "conformsTo" in data
     transaction_class = (
-        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/transaction"
+        "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/transaction"
     )
     assert transaction_class in data["conformsTo"]
 
@@ -1042,7 +1111,7 @@ def test_search_extension_registered() -> None:
         in api.app.state.catalogs_conformance_classes
     )
     assert (
-        "https://api.stacspec.org/v1.0.0-rc.2/multi-tenant-catalogs/search"
+        "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/search"
         in api.app.state.catalogs_conformance_classes
     )
 

@@ -4,7 +4,7 @@ from typing import Literal
 
 import attr
 from fastapi import Body, Path, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from stac_fastapi.types.search import APIRequest, _bbox_converter
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -184,9 +184,35 @@ class Children(StacBaseModel):
     """Children endpoint response.
 
     Returns a mixed list of Catalogs and Collections as children.
+
+    Per STAC API - Children v1.0.0, the response ``links`` array MUST include
+    ``root``, ``parent``, and ``self`` link relations, and each entity in
+    ``children`` MUST be a valid Catalog or Collection containing a ``self``
+    link to its canonical location.
     """
 
     children: list[Catalog | Collection]
     links: Links
     numberMatched: int | None = None
     numberReturned: int | None = None
+
+    @model_validator(mode="after")
+    def validate_required_links(self) -> "Children":
+        """Enforce STAC API - Children v1.0.0 required link relations."""
+        required = {"root", "parent", "self"}
+        missing = required - {link.rel for link in self.links.root}
+        if missing:
+            raise ValueError(
+                "Children endpoint response 'links' is missing required "
+                f"link relation(s): {sorted(missing)}"
+            )
+        for child in self.children:
+            child_rels = (
+                {link.rel for link in child.links.root} if child.links else set()
+            )
+            if "self" not in child_rels:
+                raise ValueError(
+                    f"Child entity '{child.id}' is missing the required "
+                    "rel='self' link"
+                )
+        return self
