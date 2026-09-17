@@ -18,6 +18,7 @@ from .types import (
     CatalogChildrenRequest,
     CatalogCollectionItemsRequest,
     CatalogCollectionItemUri,
+    CatalogCollectionsRequest,
     CatalogCollectionUri,
     Catalogs,
     CatalogsGetRequest,
@@ -29,6 +30,7 @@ from .types import (
     ObjectUri,
     SubCatalogsRequest,
     UnlinkSubCatalogRequest,
+    UpdateCatalogCollectionRequest,
     UpdateCatalogRequest,
 )
 
@@ -51,11 +53,13 @@ __all__ = [
     "CatalogCollectionUri",
     "CatalogCollectionItemUri",
     "CatalogCollectionItemsRequest",
+    "CatalogCollectionsRequest",
     "SubCatalogsRequest",
     "CatalogChildrenRequest",
     "CreateCatalogRequest",
     "UpdateCatalogRequest",
     "CreateCatalogCollectionRequest",
+    "UpdateCatalogCollectionRequest",
     "CreateSubCatalogRequest",
     "UnlinkSubCatalogRequest",
 ]
