@@ -55,6 +55,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Corrected the README implementation status table: stac-fastapi-pgstac
   implements the catalogs and transaction endpoints but does not yet implement
   scoped search (`AsyncCatalogsSearchClient`). [#19](https://github.com/StacLabs/stac-fastapi-catalogs-extension/issues/19)
+- Pinned `pydantic>=2.4.1` to match the v2-only `model_validator` usage in
+  `types.py` and the floor already required by `stac-pydantic`.
 
 ## [v0.5.0] - 2026-06-16
 
