@@ -1168,9 +1168,18 @@ class RecordingCatalogsClient(DummyCatalogsClient):
     def __init__(self) -> None:
         self.received: dict = {}
 
-    async def get_catalog_collections(self, catalog_id: str, **kwargs):
-        self.received = kwargs
-        return await super().get_catalog_collections(catalog_id=catalog_id)
+    async def get_catalog_collections(
+        self,
+        catalog_id: str,
+        limit: int | None = None,
+        token: str | None = None,
+        request: Request | None = None,
+        **kwargs,
+    ) -> Collections | Response:
+        self.received = {"limit": limit, "token": token, **kwargs}
+        return await super().get_catalog_collections(
+            catalog_id=catalog_id, limit=limit, token=token, request=request
+        )
 
 
 def _app_with(catalogs_client, **model_overrides) -> StacApi:
@@ -1199,6 +1208,21 @@ def test_request_models_default_to_current_classes() -> None:
     )
     assert extension.sub_catalogs_get_request_model is SubCatalogsRequest
     assert extension.catalog_children_get_request_model is CatalogChildrenRequest
+
+
+def test_request_model_must_subclass_default() -> None:
+    """Injected request models must subclass the route's default model."""
+    with pytest.raises(TypeError, match="catalog_collections_get_request_model"):
+        CatalogsExtension(
+            client=DummyCatalogsClient(),
+            catalog_collections_get_request_model=CatalogsGetRequest,
+        )
+
+    with pytest.raises(TypeError, match="catalogs_get_request_model"):
+        CatalogsExtension(
+            client=DummyCatalogsClient(),
+            catalogs_get_request_model="not-a-model",  # type: ignore[arg-type]
+        )
 
 
 def test_injected_model_binds_extra_query_params() -> None:

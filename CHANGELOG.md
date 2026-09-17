@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   attribute (`catalogs_get_request_model`, `catalog_collections_get_request_model`,
   `catalog_collection_items_get_request_model`, `sub_catalogs_get_request_model`,
   `catalog_children_get_request_model`), defaulting to the class the route used before.
+- `__attrs_post_init__` validation on `CatalogsExtension` requiring each injected
+  request model to subclass the route's default model, raising `TypeError` for
+  misconfigured models that would drop path parameters like `catalog_id`.
 - Exported `CatalogCollectionsRequest` and `UpdateCatalogCollectionRequest` from the
   package root.
 

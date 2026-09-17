@@ -120,6 +120,29 @@ class CatalogsExtension(ApiExtension):
         default=CatalogChildrenRequest, kw_only=True
     )
 
+    def __attrs_post_init__(self) -> None:
+        """Validate injected request models subclass their route's default.
+
+        An injected model must keep the default model's parameters (such as the
+        ``catalog_id`` path parameter) for the route binding to stay intact.
+        """
+        defaults = {
+            "catalogs_get_request_model": CatalogsGetRequest,
+            "catalog_collections_get_request_model": CatalogCollectionsRequest,
+            "catalog_collection_items_get_request_model": (
+                CatalogCollectionItemsRequest
+            ),
+            "sub_catalogs_get_request_model": SubCatalogsRequest,
+            "catalog_children_get_request_model": CatalogChildrenRequest,
+        }
+        for attribute, base_model in defaults.items():
+            model = getattr(self, attribute)
+            if not (isinstance(model, type) and issubclass(model, base_model)):
+                raise TypeError(
+                    f"{attribute} must be a subclass of {base_model.__name__}, "
+                    f"got {model!r}"
+                )
+
     def register(self, app: FastAPI) -> None:
         """Register the extension with a FastAPI application.
 
