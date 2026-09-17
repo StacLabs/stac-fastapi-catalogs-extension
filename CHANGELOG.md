@@ -37,6 +37,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Backends constructing `Children` responses without these links will now get a
   validation error.
 
+### Fixed
+
+- Corrected the README implementation status table: stac-fastapi-pgstac
+  implements the catalogs and transaction endpoints but does not yet implement
+  scoped search (`AsyncCatalogsSearchClient`). [#19](https://github.com/StacLabs/stac-fastapi-catalogs-extension/issues/19)
+
 ## [v0.5.0] - 2026-06-16
 
 ### Added
