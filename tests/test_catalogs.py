@@ -2,9 +2,10 @@
 
 from datetime import datetime
 
+import attr
 import pytest
-from fastapi import Request
 from pydantic import ValidationError
+from fastapi import Query, Request
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
@@ -16,11 +17,17 @@ from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
 from starlette.responses import Response
 from starlette.testclient import TestClient
+from typing_extensions import Annotated
 
 from stac_fastapi_catalogs_extension import (
+    CatalogChildrenRequest,
+    CatalogCollectionItemsRequest,
+    CatalogCollectionsRequest,
     CatalogsExtension,
+    CatalogsGetRequest,
     CatalogsSearchExtension,
     CatalogsTransactionExtension,
+    SubCatalogsRequest,
 )
 from stac_fastapi_catalogs_extension.client import (
     AsyncBaseCatalogsClient,
@@ -1214,3 +1221,117 @@ def test_get_all_descendant_collections() -> None:
     # Verify the method exists and is callable
     assert hasattr(catalogs_client, "get_all_descendant_collections")
     assert callable(catalogs_client.get_all_descendant_collections)
+
+
+@attr.s
+class WidenedCatalogCollectionsRequest(CatalogCollectionsRequest):
+    """Stand-in for a model composed with the collection search extensions."""
+
+    sortby: Annotated[str | None, Query(description="Sort")] = attr.ib(default=None)
+    q: Annotated[str | None, Query(description="Free text")] = attr.ib(default=None)
+
+
+class RecordingCatalogsClient(DummyCatalogsClient):
+    """Records the kwargs the collections route binds."""
+
+    def __init__(self) -> None:
+        self.received: dict = {}
+
+    async def get_catalog_collections(
+        self,
+        catalog_id: str,
+        limit: int | None = None,
+        token: str | None = None,
+        request: Request | None = None,
+        **kwargs,
+    ) -> Collections | Response:
+        self.received = {"limit": limit, "token": token, **kwargs}
+        return await super().get_catalog_collections(
+            catalog_id=catalog_id, limit=limit, token=token, request=request
+        )
+
+
+def _app_with(catalogs_client, **model_overrides) -> StacApi:
+    settings = ApiSettings()
+    return StacApi(
+        settings=settings,
+        client=DummyCoreClient(),
+        extensions=[
+            CatalogsExtension(
+                client=catalogs_client,
+                settings=settings.model_dump(),
+                **model_overrides,
+            )
+        ],
+    )
+
+
+def test_request_models_default_to_current_classes() -> None:
+    """An unmodified extension keeps the models register() used before."""
+    extension = CatalogsExtension(client=DummyCatalogsClient())
+    assert extension.catalogs_get_request_model is CatalogsGetRequest
+    assert extension.catalog_collections_get_request_model is CatalogCollectionsRequest
+    assert (
+        extension.catalog_collection_items_get_request_model
+        is CatalogCollectionItemsRequest
+    )
+    assert extension.sub_catalogs_get_request_model is SubCatalogsRequest
+    assert extension.catalog_children_get_request_model is CatalogChildrenRequest
+
+
+def test_request_model_must_subclass_default() -> None:
+    """Injected request models must subclass the route's default model."""
+    with pytest.raises(TypeError, match="catalog_collections_get_request_model"):
+        CatalogsExtension(
+            client=DummyCatalogsClient(),
+            catalog_collections_get_request_model=CatalogsGetRequest,
+        )
+
+    with pytest.raises(TypeError, match="catalogs_get_request_model"):
+        CatalogsExtension(
+            client=DummyCatalogsClient(),
+            catalogs_get_request_model="not-a-model",  # type: ignore[arg-type]
+        )
+
+
+def test_injected_model_binds_extra_query_params() -> None:
+    """An injected model's parameters reach the client method."""
+    catalogs_client = RecordingCatalogsClient()
+    api = _app_with(
+        catalogs_client,
+        catalog_collections_get_request_model=WidenedCatalogCollectionsRequest,
+    )
+    with TestClient(api.app) as test_client:
+        response = test_client.get(
+            "/catalogs/test-catalog-1/collections",
+            params={"limit": 5, "sortby": "-id", "q": "landsat"},
+        )
+    assert response.status_code == 200, response.text
+    assert catalogs_client.received["sortby"] == "-id"
+    assert catalogs_client.received["q"] == "landsat"
+    assert catalogs_client.received["limit"] == 5
+
+
+def test_injected_model_appears_in_openapi() -> None:
+    """The injected parameters are documented on the route."""
+    api = _app_with(
+        DummyCatalogsClient(),
+        catalog_collections_get_request_model=WidenedCatalogCollectionsRequest,
+    )
+    with TestClient(api.app) as test_client:
+        schema = test_client.get("/api").json()
+    route = schema["paths"]["/catalogs/{catalog_id}/collections"]["get"]
+    names = {param["name"] for param in route["parameters"]}
+    assert {"sortby", "q"} <= names
+
+
+def test_default_model_omits_extra_query_params() -> None:
+    """Without an override the extra parameters are not bound."""
+    catalogs_client = RecordingCatalogsClient()
+    api = _app_with(catalogs_client)
+    with TestClient(api.app) as test_client:
+        response = test_client.get(
+            "/catalogs/test-catalog-1/collections", params={"sortby": "-id"}
+        )
+    assert response.status_code == 200, response.text
+    assert "sortby" not in catalogs_client.received
