@@ -4,8 +4,8 @@ from datetime import datetime
 
 import attr
 import pytest
-from pydantic import ValidationError
 from fastapi import Query, Request
+from pydantic import ValidationError
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
