@@ -352,6 +352,12 @@ class AsyncBaseCatalogsClient(abc.ABC):
     ) -> Children | Response:
         """Get all children (Catalogs and Collections) of a specific catalog.
 
+        Per STAC API - Children v1.0.0, the response ``links`` array MUST
+        include ``root``, ``parent``, and ``self`` link relations, and each
+        entity in ``children`` MUST include a ``self`` link pointing to its
+        canonical location. These requirements are validated by the
+        ``Children`` response model.
+
         Args:
             catalog_id: The ID of the catalog.
             limit: Maximum number of results to return.

@@ -17,6 +17,26 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+## [v1.0.0] - 2026-09-17
+
+### Changed
+
+- Updated conformance class URIs to v1.0.0 following the Multi-Tenant Catalogs
+  and Children extension releases:
+  - https://api.stacspec.org/v1.0.0/multi-tenant-catalogs
+  - https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/transaction
+  - https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/search
+  - https://api.stacspec.org/v1.0.0/children
+  - https://api.stacspec.org/v1.0.0/children#type-filter
+
+### Breaking
+
+- The `Children` response model now enforces STAC API - Children v1.0.0 link
+  requirements: the response `links` array must include `root`, `parent`, and
+  `self` relations, and each entity in `children` must include a `self` link.
+  Backends constructing `Children` responses without these links will now get a
+  validation error.
+
 ## [v0.5.0] - 2026-06-16
 
 ### Added
@@ -127,7 +147,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 	with the Black profile.
 
 
-[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.5.0...main
+[Unreleased]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v1.0.0...main
+[v1.0.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.5.0...v1.0.0
 [v0.5.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.4.0...v0.5.0
 [v0.4.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/StacLabs/stac-fastapi-catalogs-extension/compare/v0.2.0...v0.3.0
