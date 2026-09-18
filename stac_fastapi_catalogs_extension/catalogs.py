@@ -460,6 +460,10 @@ class CatalogsTransactionExtension(ApiExtension):
             path="/catalogs/{catalog_id}/collections",
             methods=["POST"],
             status_code=HTTP_201_CREATED,
+            responses={
+                HTTP_200_OK: {"description": "Existing Collection successfully linked"},
+                HTTP_201_CREATED: {"description": "Collection created and linked"},
+            },
             endpoint=create_async_endpoint(
                 self.client.create_catalog_collection, CreateCatalogCollectionRequest
             ),
@@ -518,6 +522,12 @@ class CatalogsTransactionExtension(ApiExtension):
             path="/catalogs/{catalog_id}/catalogs",
             methods=["POST"],
             status_code=HTTP_201_CREATED,
+            responses={
+                HTTP_200_OK: {
+                    "description": "Existing Sub-Catalog successfully linked"
+                },
+                HTTP_201_CREATED: {"description": "Sub-Catalog created and linked"},
+            },
             endpoint=create_async_endpoint(
                 self.client.create_sub_catalog, CreateSubCatalogRequest
             ),
