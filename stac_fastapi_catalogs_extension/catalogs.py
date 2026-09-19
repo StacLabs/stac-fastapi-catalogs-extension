@@ -522,11 +522,12 @@ class CatalogsTransactionExtension(ApiExtension):
             path="/catalogs/{catalog_id}/catalogs",
             methods=["POST"],
             status_code=HTTP_201_CREATED,
+            response_description="Sub-Catalog created and linked",
             responses={
                 HTTP_200_OK: {
-                    "description": "Existing Sub-Catalog successfully linked"
-                },
-                HTTP_201_CREATED: {"description": "Sub-Catalog created and linked"},
+                    "model": Catalog,
+                    "description": "Existing Sub-Catalog successfully linked",
+                }
             },
             endpoint=create_async_endpoint(
                 self.client.create_sub_catalog, CreateSubCatalogRequest
