@@ -15,7 +15,8 @@ from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
 from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
+from starlette.status import HTTP_200_OK
 from starlette.testclient import TestClient
 from typing_extensions import Annotated
 
@@ -209,13 +210,20 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
         else:
             description = f"Sub-catalog of {catalog_id}"
 
-        return Catalog(
+        result = Catalog(
             type="Catalog",
             id=catalog_id_val,
             description=description,
             stac_version="1.0.0",
             links=[],
         )
+        if isinstance(catalog, ObjectUri):
+            # Linking an existing catalog: the spec requires 200, not 201.
+            return JSONResponse(
+                content=result.model_dump(mode="json", exclude_none=True),
+                status_code=HTTP_200_OK,
+            )
+        return result
 
     async def create_catalog_collection(
         self,
@@ -232,7 +240,7 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
         else:
             description = f"Collection in {catalog_id}"
 
-        return Collection(
+        result = Collection(
             type="Collection",
             id=collection_id_val,
             description=description,
@@ -243,6 +251,13 @@ class DummyCatalogsClient(AsyncBaseCatalogsClient, AsyncCatalogsSearchClient):
             license="proprietary",
             links=[],
         )
+        if isinstance(collection, ObjectUri):
+            # Linking an existing collection: the spec requires 200, not 201.
+            return JSONResponse(
+                content=result.model_dump(mode="json", exclude_none=True),
+                status_code=HTTP_200_OK,
+            )
+        return result
 
     async def get_catalog_collection(
         self,
@@ -803,7 +818,7 @@ def test_create_sub_catalog_with_object_uri(client: TestClient) -> None:
     """Test POST /catalogs/{catalog_id}/catalogs with ObjectUri (Mode B - linking)."""
     object_uri_data = {"id": "existing-catalog"}
     response = client.post("/catalogs/test-catalog-1/catalogs", json=object_uri_data)
-    assert response.status_code == 201, response.text
+    assert response.status_code == 200, response.text
     data = response.json()
     assert data["id"] == "existing-catalog"
     assert data["type"] == "Catalog"
@@ -813,10 +828,21 @@ def test_create_catalog_collection_with_object_uri(client: TestClient) -> None:
     """Test POST /catalogs/{catalog_id}/collections with ObjectUri (Mode B - linking)."""
     object_uri_data = {"id": "existing-collection"}
     response = client.post("/catalogs/test-catalog-1/collections", json=object_uri_data)
-    assert response.status_code == 201, response.text
+    assert response.status_code == 200, response.text
     data = response.json()
     assert data["id"] == "existing-collection"
     assert data["type"] == "Collection"
+
+
+def test_link_routes_declare_200_and_201_in_openapi(client: TestClient) -> None:
+    """Both create-or-link POST routes document 200 (linked) and 201 (created)."""
+    paths = client.get("/api").json()["paths"]
+    for path in (
+        "/catalogs/{catalog_id}/collections",
+        "/catalogs/{catalog_id}/catalogs",
+    ):
+        responses = paths[path]["post"]["responses"]
+        assert {"200", "201"} <= responses.keys(), (path, responses)
 
 
 def test_get_catalog_children(client: TestClient) -> None:

@@ -384,6 +384,11 @@ required async methods, including:
 - get_catalog_conformance
 - get_catalog_queryables
 
+Note: `create_catalog_collection` and `create_sub_catalog` default to `201 Created`.
+When linking an existing resource (an `ObjectUri` payload), return a `Response` with
+status `200 OK`, as the specification requires; the extension has no persistence and
+cannot tell the two cases apart itself.
+
 Note: per STAC API - Children v1.0.0, the `get_catalog_children` response
 `links` array MUST include `root`, `parent`, and `self` link relations, and
 each entity in `children` MUST include a `self` link to its canonical location.

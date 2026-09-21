@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- `POST /catalogs/{catalog_id}/collections` and `POST /catalogs/{catalog_id}/catalogs`
+  now document `200 OK` for linking an existing resource alongside `201 Created` for
+  creating a new one, as the Multi-Tenant Catalogs specification requires. The
+  `create_catalog_collection` / `create_sub_catalog` client docstrings state that a link
+  must return a `Response` with status `200`; the route default stays `201`.
+
 ## [v1.0.0] - 2026-09-17
 
 ### Added
