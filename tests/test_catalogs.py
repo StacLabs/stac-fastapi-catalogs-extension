@@ -1,6 +1,7 @@
 """Tests for the Catalogs extension."""
 
 from datetime import datetime
+from unittest.mock import AsyncMock
 
 import attr
 import pytest
@@ -1361,3 +1362,54 @@ def test_default_model_omits_extra_query_params() -> None:
         )
     assert response.status_code == 200, response.text
     assert "sortby" not in catalogs_client.received
+
+
+LIST_ROUTES = [
+    ("/catalogs", "get_catalogs", 1000),
+    ("/catalogs/test-catalog-1/collections", "get_catalog_collections", 1000),
+    (
+        "/catalogs/test-catalog-1/collections/test-collection/items",
+        "get_catalog_collection_items",
+        10_000,
+    ),
+    ("/catalogs/test-catalog-1/catalogs", "get_sub_catalogs", 1000),
+    ("/catalogs/test-catalog-1/children", "get_catalog_children", 1000),
+]
+
+
+@pytest.mark.parametrize("path, method, maximum", LIST_ROUTES)
+def test_limit_above_maximum_is_cropped(path: str, method: str, maximum: int) -> None:
+    """OGC API - Features Req. 22 C: a limit above the maximum is not an error."""
+    catalogs_client = DummyCatalogsClient()
+    spy = AsyncMock(wraps=getattr(catalogs_client, method))
+    setattr(catalogs_client, method, spy)
+    with TestClient(_app_with(catalogs_client).app) as test_client:
+        response = test_client.get(path, params={"limit": maximum + 1})
+    assert response.status_code == 200, response.text
+    assert spy.await_args.kwargs["limit"] == maximum
+
+
+@pytest.mark.parametrize("path, method, maximum", LIST_ROUTES)
+@pytest.mark.parametrize("limit", ["0", "-1", "bad", "1.5"])
+def test_invalid_limit_is_rejected(
+    client: TestClient, path: str, method: str, maximum: int, limit: str
+) -> None:
+    """A limit that is not a positive integer is still a validation error."""
+    response = client.get(path, params={"limit": limit})
+    assert response.status_code == 400, response.text
+
+
+@pytest.mark.parametrize("path, method, maximum", LIST_ROUTES)
+def test_limit_schema_has_minimum_and_no_maximum(
+    client: TestClient, path: str, method: str, maximum: int
+) -> None:
+    """The schema keeps minimum 1 and states the cap in the description."""
+    openapi_path = path.replace("test-catalog-1", "{catalog_id}").replace(
+        "test-collection", "{collection_id}"
+    )
+    params = client.get("/api").json()["paths"][openapi_path]["get"]["parameters"]
+    limit = next(param for param in params if param["name"] == "limit")
+    branches = limit["schema"].get("anyOf", [limit["schema"]])
+    assert {"type": "integer", "minimum": 1} in branches
+    assert not any("maximum" in branch for branch in branches)
+    assert f"(capped to {maximum})" in limit["description"]
