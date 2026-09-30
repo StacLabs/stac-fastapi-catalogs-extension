@@ -4,7 +4,7 @@ from typing import Literal
 
 import attr
 from fastapi import Body, Path, Query
-from pydantic import BaseModel, model_validator
+from pydantic import AfterValidator, BaseModel, Field, model_validator
 from stac_fastapi.types.search import APIRequest, _bbox_converter
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
@@ -26,6 +26,10 @@ class ObjectUri(BaseModel):
 # --- Uri Request Models for create_async_endpoint factory ---
 
 
+CatalogsLimit = Annotated[int, Field(ge=1), AfterValidator(lambda v: min(v, 1000))]
+ItemsLimit = Annotated[int, Field(ge=1), AfterValidator(lambda v: min(v, 10_000))]
+
+
 @attr.s
 class CatalogsUri(APIRequest):
     """Base for catalog-specific endpoints."""
@@ -38,8 +42,8 @@ class CatalogsGetRequest(APIRequest):
     """Parameters for the root /catalogs endpoint."""
 
     limit: Annotated[
-        int | None,
-        Query(ge=1, le=1000, description="Maximum number of catalogs to return"),
+        CatalogsLimit | None,
+        Query(description="Maximum number of catalogs to return (capped to 1000)"),
     ] = attr.ib(default=10)
     token: Annotated[str | None, Query(description="Pagination token")] = attr.ib(
         default=None
@@ -65,8 +69,8 @@ class CatalogCollectionsRequest(CatalogsUri):
     """Parameters for /catalogs/{catalog_id}/collections endpoint."""
 
     limit: Annotated[
-        int | None,
-        Query(ge=1, le=1000, description="Maximum number of collections to return"),
+        CatalogsLimit | None,
+        Query(description="Maximum number of collections to return (capped to 1000)"),
     ] = attr.ib(default=10)
     token: Annotated[str | None, Query(description="Pagination token")] = attr.ib(
         default=None
@@ -88,8 +92,8 @@ class CatalogCollectionItemsRequest(CatalogCollectionUri):
         str | None, Query(description="Datetime to filter items")
     ] = attr.ib(default=None)
     limit: Annotated[
-        int | None,
-        Query(ge=1, le=10000, description="Maximum number of items to return"),
+        ItemsLimit | None,
+        Query(description="Maximum number of items to return (capped to 10000)"),
     ] = attr.ib(default=10)
     token: Annotated[str | None, Query(description="Pagination token")] = attr.ib(
         default=None
@@ -101,8 +105,8 @@ class SubCatalogsRequest(CatalogsUri):
     """Parameters for /catalogs/{catalog_id}/catalogs."""
 
     limit: Annotated[
-        int | None,
-        Query(ge=1, le=1000, description="Maximum number of sub-catalogs to return"),
+        CatalogsLimit | None,
+        Query(description="Maximum number of sub-catalogs to return (capped to 1000)"),
     ] = attr.ib(default=10)
     token: Annotated[str | None, Query(description="Pagination token")] = attr.ib(
         default=None
@@ -114,8 +118,8 @@ class CatalogChildrenRequest(CatalogsUri):
     """Parameters for /catalogs/{catalog_id}/children."""
 
     limit: Annotated[
-        int | None,
-        Query(ge=1, le=1000, description="Maximum number of children to return"),
+        CatalogsLimit | None,
+        Query(description="Maximum number of children to return (capped to 1000)"),
     ] = attr.ib(default=10)
     token: Annotated[str | None, Query(description="Pagination token")] = attr.ib(
         default=None
