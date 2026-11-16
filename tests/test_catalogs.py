@@ -20,6 +20,8 @@ from starlette.testclient import TestClient
 from typing_extensions import Annotated
 
 from stac_fastapi_catalogs_extension import (
+    CATALOGS_COLLECTION_SEARCH_CONFORMANCE,
+    CATALOGS_CORE_CONFORMANCE,
     CatalogChildrenRequest,
     CatalogCollectionItemsRequest,
     CatalogCollectionsRequest,
@@ -1049,6 +1051,32 @@ def test_enabled_conformance_includes_transaction_class(client: TestClient) -> N
         "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/transaction"
     )
     assert transaction_class in data["conformsTo"]
+
+
+def test_enabled_conformance_includes_collection_search_class() -> None:
+    """Test that collection search conformance is present when advertised."""
+    settings = ApiSettings()
+    api = StacApi(
+        settings=settings,
+        client=DummyCoreClient(),
+        extensions=[
+            CatalogsExtension(
+                client=DummyCatalogsClient(),
+                settings=settings.model_dump(),
+                conformance_classes=[
+                    *CATALOGS_CORE_CONFORMANCE,
+                    *CATALOGS_COLLECTION_SEARCH_CONFORMANCE,
+                ],
+            ),
+        ],
+    )
+    with TestClient(api.app) as test_client:
+        response = test_client.get("/catalogs/test-catalog-1/conformance")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert "conformsTo" in data
+    for conformance_class in CATALOGS_COLLECTION_SEARCH_CONFORMANCE:
+        assert conformance_class in data["conformsTo"]
 
 
 def test_hide_alternate_parents_flag() -> None:

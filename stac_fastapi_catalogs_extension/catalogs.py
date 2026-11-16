@@ -55,7 +55,8 @@ CATALOGS_SEARCH_CONFORMANCE = [
 ]
 
 CATALOGS_COLLECTION_SEARCH_CONFORMANCE = [
-    "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search",
+    "https://api.stacspec.org/v1.0.0/collection-search",
+    "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/collection-search",
 ]
 
 

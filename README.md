@@ -329,13 +329,16 @@ defaulting to the model the route used before:
 
 Override one to add query parameters to a route. For the catalog collections
 route the multi-tenant-catalogs specification defines the STAC API Collection
-Search parameters (`fields`, `sortby`, `q`, `filter`/`filter-lang`/`filter-crs`)
-as an **optional** capability under the
-`https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search`
+Search parameters (`limit`, `bbox`, `datetime`, `fields`, `sortby`, `q`,
+`filter`/`filter-lang`/`filter-crs`) as an **optional** capability under the
+`https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/collection-search`
 conformance class — independent of whether a flat `/collections` route exists.
-Deployments that support them MUST apply them strictly within the catalog scope
-and SHOULD advertise the conformance class. Compose them onto the default model
-with `create_request_model`:
+Deployments that support them MUST apply the parameters strictly to the
+catalog's directly linked collections (the route is not recursive into
+descendant catalogs), MUST advertise the
+`.../multi-tenant-catalogs/collection-search` class, and SHOULD advertise the
+`collection-search` classes for the parameter groups they support. Compose them
+onto the default model with `create_request_model`:
 
 ```python
 from stac_fastapi.api.models import create_request_model
