@@ -54,6 +54,10 @@ CATALOGS_SEARCH_CONFORMANCE = [
     "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/search",
 ]
 
+CATALOGS_COLLECTION_SEARCH_CONFORMANCE = [
+    "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search",
+]
+
 
 @attr.s
 class CatalogsExtension(ApiExtension):

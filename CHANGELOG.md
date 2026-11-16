@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 ### Added
+- Documented that `GET /catalogs/{catalog_id}/collections` may accept the STAC API Collection Search parameters (`fields`, `sortby`, `q`, `filter`/`filter-lang`/`filter-crs`) as an optional capability under the new `https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search` conformance class, independent of a flat `/collections` route; added the `CATALOGS_COLLECTION_SEARCH_CONFORMANCE` constant for deployments that advertise it.
 
 ### Updated
 

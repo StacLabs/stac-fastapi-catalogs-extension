@@ -327,10 +327,15 @@ defaulting to the model the route used before:
 | `GET /catalogs/{catalog_id}/catalogs` | `sub_catalogs_get_request_model` | `SubCatalogsRequest` |
 | `GET /catalogs/{catalog_id}/children` | `catalog_children_get_request_model` | `CatalogChildrenRequest` |
 
-Override one to add query parameters to a route. The catalog collections route is a
-collection listing, so the STAC API Collection Search parameters (`fields`, `sortby`,
-`q`, `filter`) apply to it. Compose them onto the default model with
-`create_request_model`:
+Override one to add query parameters to a route. For the catalog collections
+route the multi-tenant-catalogs specification defines the STAC API Collection
+Search parameters (`fields`, `sortby`, `q`, `filter`/`filter-lang`/`filter-crs`)
+as an **optional** capability under the
+`https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search`
+conformance class — independent of whether a flat `/collections` route exists.
+Deployments that support them MUST apply them strictly within the catalog scope
+and SHOULD advertise the conformance class. Compose them onto the default model
+with `create_request_model`:
 
 ```python
 from stac_fastapi.api.models import create_request_model
@@ -356,6 +361,24 @@ CatalogsExtension(
 FastAPI binds and validates the parameters, and they reach your client method
 through `**kwargs`. Passing the same extension list to `StacApi` gives
 `GET /collections` and `GET /catalogs/{catalog_id}/collections` matching parameters.
+Deployments that do not want these parameters keep the default
+`CatalogCollectionsRequest` (or compose a smaller extension list) and then
+MUST NOT advertise the conformance class. When composing the full parameter
+set, register the constant:
+
+```python
+from stac_fastapi_catalogs_extension import (
+    CATALOGS_COLLECTION_SEARCH_CONFORMANCE,
+    CATALOGS_CORE_CONFORMANCE,
+    CatalogsExtension,
+)
+
+CatalogsExtension(
+    client=catalogs_client,
+    catalog_collections_get_request_model=catalog_collections_model,
+    conformance_classes=[*CATALOGS_CORE_CONFORMANCE, *CATALOGS_COLLECTION_SEARCH_CONFORMANCE],
+)
+```
 
 Advertising the conformance classes for a composed model is the deployment's
 responsibility, as it already is on `StacApi`.
