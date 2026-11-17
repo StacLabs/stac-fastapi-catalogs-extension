@@ -353,9 +353,6 @@ them onto the default model with `create_request_model`:
 
 ```python
 from stac_fastapi.api.models import create_request_model
-from stac_fastapi.extensions.core.collection_search.request import (
-    BaseCollectionSearchGetRequest,
-)
 
 from stac_fastapi_catalogs_extension import (
     CatalogCollectionsRequest,
@@ -366,7 +363,8 @@ catalog_collections_model = create_request_model(
     model_name="CatalogCollectionsGetRequest",
     base_model=CatalogCollectionsRequest,
     extensions=[fields_extension, sort_extension, filter_extension, free_text_extension],
-    mixins=[BaseCollectionSearchGetRequest],
+    # mixin supplying the Collection Search Basics (bbox, datetime, limit)
+    mixins=[collection_search_basics_model],
     request_type="GET",
 )
 
@@ -376,7 +374,11 @@ CatalogsExtension(
 )
 ```
 
-FastAPI binds and validates the parameters, and they reach your client method
+`collection_search_basics_model` can be any request model supplying `bbox`,
+`datetime`, and `limit` query parameters — for example stac-fastapi's
+`BaseCollectionSearchGetRequest` where the deployment provides it, or an
+equivalent model defined in your app. FastAPI binds and validates the
+parameters, and they reach your client method
 through `**kwargs`. Passing the same extension list to `StacApi` gives
 `GET /collections` and `GET /catalogs/{catalog_id}/collections` matching parameters.
 Deployments that do not want these parameters keep the default

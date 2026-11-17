@@ -8,17 +8,20 @@ from fastapi import Query, Request
 from pydantic import ValidationError
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import create_request_model
-from stac_fastapi.extensions.core.collection_search.request import (
-    BaseCollectionSearchGetRequest,
-)
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
-from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest
+from stac_fastapi.types.search import (
+    APIRequest,
+    BaseSearchGetRequest,
+    BaseSearchPostRequest,
+    _bbox_converter,
+)
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
 from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
+from stac_pydantic.shared import BBox
 from starlette.responses import Response
 from starlette.testclient import TestClient
 from typing_extensions import Annotated
@@ -1077,7 +1080,7 @@ def test_enabled_conformance_includes_collection_search_class() -> None:
                 catalog_collections_get_request_model=create_request_model(
                     model_name="CatalogCollectionsGetRequest",
                     base_model=CatalogCollectionsRequest,
-                    mixins=[BaseCollectionSearchGetRequest],
+                    mixins=[CollectionSearchBasicsRequest],
                     request_type="GET",
                 ),
                 conformance_classes=[
@@ -1280,6 +1283,27 @@ class WidenedCatalogCollectionsRequest(CatalogCollectionsRequest):
 
     sortby: Annotated[str | None, Query(description="Sort")] = attr.ib(default=None)
     q: Annotated[str | None, Query(description="Free text")] = attr.ib(default=None)
+
+
+@attr.s
+class CollectionSearchBasicsRequest(APIRequest):
+    """Stand-in for the upstream collection-search base class parameters.
+
+    Mixed onto the catalog collections model so a test app satisfies the
+    ``collection-search`` Basics (``bbox``, ``datetime``, ``limit``) it
+    advertises.
+    """
+
+    bbox: Annotated[
+        BBox | None,
+        Query(description="Bounding box to filter collections"),
+    ] = attr.ib(
+        default=None,
+        converter=lambda x: _bbox_converter(x) if x is not None else None,
+    )
+    datetime: Annotated[
+        str | None, Query(description="Datetime to filter collections")
+    ] = attr.ib(default=None)
 
 
 class RecordingCatalogsClient(DummyCatalogsClient):
