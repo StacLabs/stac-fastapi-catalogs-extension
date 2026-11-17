@@ -81,6 +81,11 @@ according to your enabled capabilities:
 - Optional (only if scoped search endpoints are enabled):
 	- https://api.stacspec.org/v1.0.0/item-search
 	- https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/search
+- Optional (only if binding Collection Search parameters on the scoped
+	collections listing):
+	- https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search
+	- the upstream `collection-search` classes for each parameter group
+		supported (e.g. https://api.stacspec.org/v1.0.0/collection-search)
 
 Operational guidance:
 
@@ -328,20 +333,29 @@ defaulting to the model the route used before:
 | `GET /catalogs/{catalog_id}/children` | `catalog_children_get_request_model` | `CatalogChildrenRequest` |
 
 Override one to add query parameters to a route. For the catalog collections
-route the multi-tenant-catalogs specification defines the STAC API Collection
-Search parameters (`limit`, `bbox`, `datetime`, `fields`, `sortby`, `q`,
-`filter`/`filter-lang`/`filter-crs`) as an **optional** capability under the
-`https://api.stacspec.org/v1.0.0/multi-tenant-catalogs/collection-search`
-conformance class — independent of whether a flat `/collections` route exists.
-Deployments that support them MUST apply the parameters strictly to the
-catalog's directly linked collections (the route is not recursive into
-descendant catalogs), MUST advertise the
-`.../multi-tenant-catalogs/collection-search` class, and SHOULD advertise the
-`collection-search` classes for the parameter groups they support. Compose them
-onto the default model with `create_request_model`:
+route the multi-tenant-catalogs specification treats the STAC API Collection
+Search parameters (`bbox`, `datetime`, `fields`, `sortby`, `q`,
+`filter`/`filter-lang`/`filter-crs`) as an **optional** capability bound
+through the
+`https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search`
+marker class. The marker is a binding only: each parameter group applies
+solely while the corresponding upstream `collection-search` conformance class
+is also advertised (e.g. `collection-search` for `bbox`/`datetime`,
+`collection-search#sort` for `sortby`, `collection-search#filter` for the
+`filter` parameters). The upstream base class MUST be advertised whenever any
+group is bound — it also makes `limit` required and presumes the OGC API
+Common `simple-query` class (`#filter` likewise presumes a CQL2 class) — and
+advertising the upstream classes presumes the deployment also serves
+`GET /collections` under Collection Search. Deployments that support these
+parameters MUST apply them strictly to the catalog's directly linked
+collections (the route is not recursive into descendant catalogs). Compose
+them onto the default model with `create_request_model`:
 
 ```python
 from stac_fastapi.api.models import create_request_model
+from stac_fastapi.extensions.core.collection_search.request import (
+    BaseCollectionSearchGetRequest,
+)
 
 from stac_fastapi_catalogs_extension import (
     CatalogCollectionsRequest,
@@ -352,6 +366,7 @@ catalog_collections_model = create_request_model(
     model_name="CatalogCollectionsGetRequest",
     base_model=CatalogCollectionsRequest,
     extensions=[fields_extension, sort_extension, filter_extension, free_text_extension],
+    mixins=[BaseCollectionSearchGetRequest],
     request_type="GET",
 )
 
@@ -366,8 +381,10 @@ through `**kwargs`. Passing the same extension list to `StacApi` gives
 `GET /collections` and `GET /catalogs/{catalog_id}/collections` matching parameters.
 Deployments that do not want these parameters keep the default
 `CatalogCollectionsRequest` (or compose a smaller extension list) and then
-MUST NOT advertise the conformance class. When composing the full parameter
-set, register the constant:
+MUST NOT advertise the Collection Search classes — `limit` and `token` remain
+plain pagination primitives of the route either way, and advertising the
+marker class alone binds no parameters. When binding the Collection Search
+Basics (`bbox`, `datetime`, `limit`), register the bundled constant:
 
 ```python
 from stac_fastapi_catalogs_extension import (
@@ -383,8 +400,13 @@ CatalogsExtension(
 )
 ```
 
-Advertising the conformance classes for a composed model is the deployment's
-responsibility, as it already is on `StacApi`.
+`CATALOGS_COLLECTION_SEARCH_CONFORMANCE` bundles the marker class with the
+upstream `collection-search` base class and the `simple-query` class it
+presumes. Deployments binding further parameter groups advertise the
+corresponding upstream classes (e.g. `collection-search#sort`,
+`collection-search#filter` plus a CQL2 class) alongside it. Advertising the
+conformance classes for a composed model is the deployment's responsibility,
+as it already is on `StacApi`.
 
 ## Backend client requirements
 

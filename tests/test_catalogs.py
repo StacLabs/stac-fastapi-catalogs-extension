@@ -7,6 +7,10 @@ import pytest
 from fastapi import Query, Request
 from pydantic import ValidationError
 from stac_fastapi.api.app import StacApi
+from stac_fastapi.api.models import create_request_model
+from stac_fastapi.extensions.core.collection_search.request import (
+    BaseCollectionSearchGetRequest,
+)
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
 from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest
@@ -1054,15 +1058,28 @@ def test_enabled_conformance_includes_transaction_class(client: TestClient) -> N
 
 
 def test_enabled_conformance_includes_collection_search_class() -> None:
-    """Test that collection search conformance is present when advertised."""
+    """Test that collection search conformance is present when advertised.
+
+    The route model is composed with the Collection Search Basics
+    (``bbox``, ``datetime``, ``limit``) so the advertised
+    ``collection-search`` and ``simple-query`` classes reflect parameters
+    the route actually binds.
+    """
     settings = ApiSettings()
+    catalogs_client = RecordingCatalogsClient()
     api = StacApi(
         settings=settings,
         client=DummyCoreClient(),
         extensions=[
             CatalogsExtension(
-                client=DummyCatalogsClient(),
+                client=catalogs_client,
                 settings=settings.model_dump(),
+                catalog_collections_get_request_model=create_request_model(
+                    model_name="CatalogCollectionsGetRequest",
+                    base_model=CatalogCollectionsRequest,
+                    mixins=[BaseCollectionSearchGetRequest],
+                    request_type="GET",
+                ),
                 conformance_classes=[
                     *CATALOGS_CORE_CONFORMANCE,
                     *CATALOGS_COLLECTION_SEARCH_CONFORMANCE,
@@ -1072,11 +1089,17 @@ def test_enabled_conformance_includes_collection_search_class() -> None:
     )
     with TestClient(api.app) as test_client:
         response = test_client.get("/catalogs/test-catalog-1/conformance")
+        search_response = test_client.get(
+            "/catalogs/test-catalog-1/collections",
+            params={"bbox": "-1,-1,1,1"},
+        )
     assert response.status_code == 200, response.text
     data = response.json()
     assert "conformsTo" in data
     for conformance_class in CATALOGS_COLLECTION_SEARCH_CONFORMANCE:
         assert conformance_class in data["conformsTo"]
+    assert search_response.status_code == 200, search_response.text
+    assert catalogs_client.received["bbox"] == (-1.0, -1.0, 1.0, 1.0)
 
 
 def test_hide_alternate_parents_flag() -> None:
