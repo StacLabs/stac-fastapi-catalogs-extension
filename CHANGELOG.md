@@ -18,6 +18,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- `GET /catalogs`, `/catalogs/{catalog_id}/collections`, `/catalogs/{catalog_id}/catalogs`
+  and `/catalogs/{catalog_id}/children` now crop a `limit` above 1000 to 1000, and
+  `/catalogs/{catalog_id}/collections/{collection_id}/items` crops one above 10000 to
+  10000, instead of rejecting it, as OGC API - Features Req. 22 C requires.
+- `POST /catalogs/{catalog_id}/collections` and `POST /catalogs/{catalog_id}/catalogs`
+  now document `200 OK` for linking an existing resource alongside `201 Created` for
+  creating a new one, as the Multi-Tenant Catalogs specification requires. The
+  `create_catalog_collection` / `create_sub_catalog` client docstrings state that a link
+  must return a `Response` with status `200`; the route default stays `201`.
+
 ## [v1.0.0] - 2026-09-17
 
 ### Added

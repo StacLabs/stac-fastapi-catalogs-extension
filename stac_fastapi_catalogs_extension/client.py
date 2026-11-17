@@ -185,7 +185,9 @@ class AsyncBaseCatalogsClient(abc.ABC):
             request: Optional FastAPI request object.
 
         Returns:
-            The created or linked catalog.
+            The created or linked catalog. The route defaults to ``201 Created``;
+            when linking an existing catalog, return a ``Response`` with status
+            ``200 OK`` as the specification requires.
         """
         ...
 
@@ -209,7 +211,9 @@ class AsyncBaseCatalogsClient(abc.ABC):
             request: Optional FastAPI request object.
 
         Returns:
-            The created or linked collection.
+            The created or linked collection. The route defaults to ``201 Created``;
+            when linking an existing collection, return a ``Response`` with status
+            ``200 OK`` as the specification requires.
         """
         ...
 
