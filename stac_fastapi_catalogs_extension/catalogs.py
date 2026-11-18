@@ -367,7 +367,7 @@ class CatalogsExtension(ApiExtension):
                 conforms.extend(request.app.state.catalogs_conformance_classes)
             else:
                 conforms.extend(self.conformance_classes)
-            result["conformsTo"] = list(dict.fromkeys(conforms))
+            result["conformsTo"] = sorted(set(conforms))
         return result
 
 
