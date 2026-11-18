@@ -57,7 +57,9 @@ CATALOGS_SEARCH_CONFORMANCE = [
 # Advertise only when GET /catalogs/{catalog_id}/collections implements the
 # Collection Search Basics (bbox, datetime, limit): the spec binds parameter
 # groups through these classes, so enabling the marker while the route only
-# parses limit/token claims conformance it cannot satisfy.
+# parses limit/token claims conformance it cannot satisfy. Registered
+# classes also land in the landing page conformsTo, so this likewise claims
+# Collection Search on GET /collections.
 CATALOGS_COLLECTION_SEARCH_CONFORMANCE = [
     "https://api.stacspec.org/v1.0.0/collection-search",
     "http://www.opengis.net/spec/ogcapi-common-2/1.0/conf/simple-query",

@@ -1093,7 +1093,8 @@ def test_enabled_conformance_includes_collection_search_class() -> None:
     The route model is composed with the Collection Search Basics
     (``bbox``, ``datetime``, ``limit``) so the advertised
     ``collection-search`` and ``simple-query`` classes reflect parameters
-    the route actually binds.
+    the route actually binds. The marker class is also asserted in the
+    root landing page ``conformsTo``, as the spec requires.
     """
     settings = ApiSettings()
     catalogs_client = RecordingCatalogsClient()
@@ -1119,6 +1120,7 @@ def test_enabled_conformance_includes_collection_search_class() -> None:
     )
     with TestClient(api.app) as test_client:
         response = test_client.get("/catalogs/test-catalog-1/conformance")
+        root_response = test_client.get("/")
         search_response = test_client.get(
             "/catalogs/test-catalog-1/collections",
             params={"bbox": "-1,-1,1,1"},
@@ -1128,6 +1130,12 @@ def test_enabled_conformance_includes_collection_search_class() -> None:
     assert "conformsTo" in data
     for conformance_class in CATALOGS_COLLECTION_SEARCH_CONFORMANCE:
         assert conformance_class in data["conformsTo"]
+    # The spec requires the marker class in the root landing page conformsTo
+    assert root_response.status_code == 200, root_response.text
+    marker_class = (
+        "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search"
+    )
+    assert marker_class in root_response.json()["conformsTo"]
     assert search_response.status_code == 200, search_response.text
     assert catalogs_client.received["bbox"] == (-1.0, -1.0, 1.0, 1.0)
 

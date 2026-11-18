@@ -383,10 +383,12 @@ through `**kwargs`. Passing the same extension list to `StacApi` gives
 `GET /collections` and `GET /catalogs/{catalog_id}/collections` matching parameters.
 Deployments that do not want these parameters keep the default
 `CatalogCollectionsRequest` (or compose a smaller extension list) and then
-MUST NOT advertise the Collection Search classes — `limit` and `token` remain
-plain pagination primitives of the route either way, and advertising the
-marker class alone binds no parameters. When binding the Collection Search
-Basics (`bbox`, `datetime`, `limit`), register the bundled constant:
+MUST NOT advertise the `multi-tenant-catalogs#collection-search` marker
+class — upstream `collection-search` classes may still be advertised at the
+root for `GET /collections`, and `limit`/`token` remain plain pagination
+primitives of the route either way; the marker alone binds no parameters.
+When binding the Collection Search Basics (`bbox`, `datetime`, `limit`),
+register the bundled constant:
 
 ```python
 from stac_fastapi_catalogs_extension import (
@@ -406,9 +408,15 @@ CatalogsExtension(
 upstream `collection-search` base class and the `simple-query` class it
 presumes. Deployments binding further parameter groups advertise the
 corresponding upstream classes (e.g. `collection-search#sort`,
-`collection-search#filter` plus a CQL2 class) alongside it. Advertising the
-conformance classes for a composed model is the deployment's responsibility,
-as it already is on `StacApi`.
+`collection-search#filter` plus a CQL2 class) alongside it. Binding
+`#filter` or `#sortables` also requires the scoped listing's `links` to
+carry a `queryables`/`sortables` link (`application/schema+json`) pointing
+at a corresponding endpoint — the spec recommends
+`/catalogs/{catalog_id}/collection-queryables` and
+`/catalogs/{catalog_id}/collection-sortables`; the extension does not
+generate these links, so the deployment must supply them. Advertising the
+conformance classes for a composed model is the deployment's
+responsibility, as it already is on `StacApi`.
 
 ## Backend client requirements
 
