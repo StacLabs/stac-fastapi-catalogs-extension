@@ -1,6 +1,7 @@
 """stac-fastapi-catalogs-extension: Multi-tenant catalog hierarchies for STAC FastAPI."""
 
 from .catalogs import (
+    CATALOGS_COLLECTION_SEARCH_CONFORMANCE,
     CATALOGS_CORE_CONFORMANCE,
     CATALOGS_SEARCH_CONFORMANCE,
     CATALOGS_TRANSACTION_CONFORMANCE,
@@ -48,6 +49,7 @@ __all__ = [
     "CATALOGS_CORE_CONFORMANCE",
     "CATALOGS_TRANSACTION_CONFORMANCE",
     "CATALOGS_SEARCH_CONFORMANCE",
+    "CATALOGS_COLLECTION_SEARCH_CONFORMANCE",
     "CatalogsUri",
     "CatalogsGetRequest",
     "CatalogCollectionUri",

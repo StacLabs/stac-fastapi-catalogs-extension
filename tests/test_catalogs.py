@@ -8,20 +8,29 @@ import pytest
 from fastapi import Query, Request
 from pydantic import ValidationError
 from stac_fastapi.api.app import StacApi
+from stac_fastapi.api.models import create_request_model
 from stac_fastapi.types.config import ApiSettings
 from stac_fastapi.types.core import BaseCoreClient
-from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest
+from stac_fastapi.types.search import (
+    APIRequest,
+    BaseSearchGetRequest,
+    BaseSearchPostRequest,
+    _bbox_converter,
+)
 from stac_pydantic.api.collections import Collections
 from stac_pydantic.catalog import Catalog
 from stac_pydantic.collection import Collection
 from stac_pydantic.item import Item
 from stac_pydantic.item_collection import ItemCollection
+from stac_pydantic.shared import BBox
 from starlette.responses import JSONResponse, Response
 from starlette.status import HTTP_200_OK
 from starlette.testclient import TestClient
 from typing_extensions import Annotated
 
 from stac_fastapi_catalogs_extension import (
+    CATALOGS_COLLECTION_SEARCH_CONFORMANCE,
+    CATALOGS_CORE_CONFORMANCE,
     CatalogChildrenRequest,
     CatalogCollectionItemsRequest,
     CatalogCollectionsRequest,
@@ -1078,6 +1087,59 @@ def test_enabled_conformance_includes_transaction_class(client: TestClient) -> N
     assert transaction_class in data["conformsTo"]
 
 
+def test_enabled_conformance_includes_collection_search_class() -> None:
+    """Test that collection search conformance is present when advertised.
+
+    The route model is composed with the Collection Search Basics
+    (``bbox``, ``datetime``, ``limit``) so the advertised
+    ``collection-search`` and ``simple-query`` classes reflect parameters
+    the route actually binds. The marker class is also asserted in the
+    root landing page ``conformsTo``, as the spec requires.
+    """
+    settings = ApiSettings()
+    catalogs_client = RecordingCatalogsClient()
+    api = StacApi(
+        settings=settings,
+        client=DummyCoreClient(),
+        extensions=[
+            CatalogsExtension(
+                client=catalogs_client,
+                settings=settings.model_dump(),
+                catalog_collections_get_request_model=create_request_model(
+                    model_name="CatalogCollectionsGetRequest",
+                    base_model=CatalogCollectionsRequest,
+                    mixins=[CollectionSearchBasicsRequest],
+                    request_type="GET",
+                ),
+                conformance_classes=[
+                    *CATALOGS_CORE_CONFORMANCE,
+                    *CATALOGS_COLLECTION_SEARCH_CONFORMANCE,
+                ],
+            ),
+        ],
+    )
+    with TestClient(api.app) as test_client:
+        response = test_client.get("/catalogs/test-catalog-1/conformance")
+        root_response = test_client.get("/")
+        search_response = test_client.get(
+            "/catalogs/test-catalog-1/collections",
+            params={"bbox": "-1,-1,1,1"},
+        )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert "conformsTo" in data
+    for conformance_class in CATALOGS_COLLECTION_SEARCH_CONFORMANCE:
+        assert conformance_class in data["conformsTo"]
+    # The spec requires the marker class in the root landing page conformsTo
+    assert root_response.status_code == 200, root_response.text
+    marker_class = (
+        "https://api.stacspec.org/v1.0.0/multi-tenant-catalogs#collection-search"
+    )
+    assert marker_class in root_response.json()["conformsTo"]
+    assert search_response.status_code == 200, search_response.text
+    assert catalogs_client.received["bbox"] == (-1.0, -1.0, 1.0, 1.0)
+
+
 def test_hide_alternate_parents_flag() -> None:
     """Test that hide_alternate_parents flag is properly stored in app.state."""
     settings = ApiSettings()
@@ -1256,6 +1318,27 @@ class WidenedCatalogCollectionsRequest(CatalogCollectionsRequest):
 
     sortby: Annotated[str | None, Query(description="Sort")] = attr.ib(default=None)
     q: Annotated[str | None, Query(description="Free text")] = attr.ib(default=None)
+
+
+@attr.s
+class CollectionSearchBasicsRequest(APIRequest):
+    """Stand-in for the upstream collection-search base class parameters.
+
+    Mixed onto the catalog collections model so a test app satisfies the
+    ``collection-search`` Basics (``bbox``, ``datetime``, ``limit``) it
+    advertises.
+    """
+
+    bbox: Annotated[
+        BBox | None,
+        Query(description="Bounding box to filter collections"),
+    ] = attr.ib(
+        default=None,
+        converter=lambda x: _bbox_converter(x) if x is not None else None,
+    )
+    datetime: Annotated[
+        str | None, Query(description="Datetime to filter collections")
+    ] = attr.ib(default=None)
 
 
 class RecordingCatalogsClient(DummyCatalogsClient):

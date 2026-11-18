@@ -66,7 +66,15 @@ class CatalogCollectionItemUri(CatalogCollectionUri):
 
 @attr.s
 class CatalogCollectionsRequest(CatalogsUri):
-    """Parameters for /catalogs/{catalog_id}/collections endpoint."""
+    """Parameters for /catalogs/{catalog_id}/collections endpoint.
+
+    ``limit`` and ``token`` are pagination primitives the route may accept
+    regardless of the ``multi-tenant-catalogs#collection-search`` marker
+    class. Collection Search parameters (``bbox``, ``datetime``, ``q``,
+    ``filter``/``filter-lang``/``filter-crs``, ``sortby``, ``fields``) require
+    a wider model composed with
+    ``stac_fastapi.api.models.create_request_model``.
+    """
 
     limit: Annotated[
         CatalogsLimit | None,
